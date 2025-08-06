@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=wmplayer
+Exec=wmplayer
+Icon=appicon
+Categories=Development;
+Terminal=false
+Keywords=wails
+Version=1.0
+StartupNotify=false

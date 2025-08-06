@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Name=MGPlayer
+Comment=A Wayland-native music player
+Exec=env GDK_BACKEND=wayland /home/designer/Desktop/wails3-go-music/wg-music/wmplayer %F
+Icon=/home/designer/Desktop/wails3-go-music/wg-music/build/appicon.png
+
+# 关键字段
+Terminal=false
+StartupWMClass=wmplayer
+Categories=AudioVideo;Audio;Player;
+
+# 支持的音频格式
+MimeType=audio/mpeg;audio/flac;application/ogg;audio/x-vorbis+ogg;audio/wav;audio/x-aiff;audio/aac;audio/mp4;
+
+# 让桌面环境知道这是“默认音乐播放器”候选
+X-KDE-StartupNotify=false
