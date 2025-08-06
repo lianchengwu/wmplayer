@@ -279,6 +279,10 @@ wails3 dev -loglevel debug
 - [酷狗音乐 API](https://github.com/MakcRe/KuGouMusicApi) - 音乐数据来源
 - 所有贡献者和用户的支持
 
+## 💬 交流群组
+
+- [Telegram 群组](https://t.me/+EzW5VV8YtOhhMjQ1) - 加入我们的 Telegram 群组进行交流讨论
+
 ---
 
 <div align="center">
