@@ -87,7 +87,7 @@
 ### 安装依赖
 
 ``` bash
-# 安装api -[酷狗API](https://github.com/MakcRe/KuGouMusicApi)
+安装api -[酷狗API](https://github.com/MakcRe/KuGouMusicApi)
 export platform=lite
 export PORT=40000
 ./KuGouMusicApi
@@ -152,7 +152,7 @@ wmplayer/
 
 ## 🎵 歌词系统
 
-wmPlayer 提供了两种歌词显示方案：
+wmPlayer 提供了两种歌词显示方案（[歌词系统](https://github.com/lianchengwu/wmplayer-lyric)）：
 
 ### 🖥️ OSD 桌面歌词
 
