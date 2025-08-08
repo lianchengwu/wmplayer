@@ -87,7 +87,8 @@
 ### 安装依赖
 
 ``` bash
-安装api -[酷狗API](https://github.com/MakcRe/KuGouMusicApi)
+# 安装api 
+- [酷狗API](https://github.com/MakcRe/KuGouMusicApi)
 export platform=lite
 export PORT=40000
 ./KuGouMusicApi
