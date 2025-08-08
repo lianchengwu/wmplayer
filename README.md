@@ -152,7 +152,8 @@ wmplayer/
 
 ## 🎵 歌词系统
 
-wmPlayer 提供了两种歌词显示方案（[歌词系统](https://github.com/lianchengwu/wmplayer-lyric)）：
+wmPlayer 提供了两种歌词显示方案：
+- [歌词系统](https://github.com/lianchengwu/wmplayer-lyric)
 
 ### 🖥️ OSD 桌面歌词
 
