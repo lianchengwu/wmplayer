@@ -13,6 +13,7 @@ type MediaKeyService struct {
 	app          any
 	isRegistered bool
 	mu           sync.RWMutex
+	mprisService *MPRISService // MPRIS服务实例
 }
 
 // NewMediaKeyService 创建媒体键服务
@@ -97,9 +98,25 @@ func (m *MediaKeyService) registerSystemMediaKeys() error {
 
 // registerLinuxMediaKeys Linux平台媒体键注册
 func (m *MediaKeyService) registerLinuxMediaKeys() error {
-	log.Println("🐧 Linux平台：使用前端键盘监听（推荐方案）")
-	// Linux下的全局快捷键比较复杂，需要与桌面环境集成
-	// 目前使用前端键盘监听作为主要方案
+	log.Println("🐧 Linux平台：启用MPRIS D-Bus媒体控制")
+
+	// 创建MPRIS服务
+	if m.mprisService == nil {
+		m.mprisService = NewMPRISService()
+		m.mprisService.SetContext(m.ctx)
+		m.mprisService.SetApp(m.app)
+		m.mprisService.SetMediaKeyService(m)
+	}
+
+	// 启动MPRIS服务
+	if err := m.mprisService.Start(); err != nil {
+		log.Printf("⚠️ MPRIS服务启动失败: %v，降级到前端键盘监听", err)
+		return m.registerFrontendKeys()
+	}
+
+	log.Println("✅ MPRIS D-Bus媒体控制启动成功")
+
+	// 同时启用前端键盘监听作为备用
 	return m.registerFrontendKeys()
 }
 
@@ -156,6 +173,13 @@ func (m *MediaKeyService) UnregisterMediaKeys() {
 	}
 
 	log.Println("🎵 正在取消注册媒体键...")
+
+	// 停止MPRIS服务
+	if m.mprisService != nil {
+		m.mprisService.StopService()
+		m.mprisService = nil
+	}
+
 	m.isRegistered = false
 	log.Println("✅ 媒体键已取消注册")
 }
@@ -170,10 +194,20 @@ func (m *MediaKeyService) GetMediaKeyStatus() map[string]any {
 		"registered": m.isRegistered,
 		"platform":   runtime.GOOS,
 		"supported":  m.isPlatformSupported(),
-		"mode":       "frontend_keyboard_listener",
 	}
 
-	status["message"] = "前端键盘监听模式（推荐）"
+	// 检查MPRIS状态
+	if runtime.GOOS == "linux" && m.mprisService != nil && m.mprisService.IsActive() {
+		status["mode"] = "mpris_dbus"
+		status["message"] = "MPRIS D-Bus媒体控制（系统级）"
+		status["mpris"] = m.mprisService.GetStatus()
+		status["note"] = "支持全局媒体键控制，无需应用窗口焦点"
+	} else {
+		status["mode"] = "frontend_keyboard_listener"
+		status["message"] = "前端键盘监听模式"
+		status["note"] = "需要应用窗口处于焦点状态"
+	}
+
 	status["keys"] = []string{
 		"Space - 播放/暂停",
 		"F8 - 播放/暂停",
@@ -184,7 +218,6 @@ func (m *MediaKeyService) GetMediaKeyStatus() map[string]any {
 		"Ctrl+Up - 音量+",
 		"Ctrl+Down - 音量-",
 	}
-	status["note"] = "需要应用窗口处于焦点状态"
 
 	return status
 }
@@ -274,5 +307,112 @@ func (m *MediaKeyService) handleVolumeDown() map[string]any {
 		"success": true,
 		"message": "音量减少命令已处理",
 		"action":  "volume_down",
+	}
+}
+
+// ==================== MPRIS状态更新方法 ====================
+
+// UpdateMPRISPlaybackStatus 更新MPRIS播放状态
+func (m *MediaKeyService) UpdateMPRISPlaybackStatus(status string) {
+	if m.mprisService != nil && m.mprisService.IsActive() {
+		m.mprisService.SetPlaybackStatus(status)
+	}
+}
+
+// UpdateMPRISMetadata 更新MPRIS歌曲元数据
+func (m *MediaKeyService) UpdateMPRISMetadata(title, artist, album, artUrl string, duration int64) {
+	if m.mprisService != nil && m.mprisService.IsActive() {
+		m.mprisService.SetMetadata(title, artist, album, artUrl, duration)
+	}
+}
+
+// UpdateMPRISVolume 更新MPRIS音量
+func (m *MediaKeyService) UpdateMPRISVolume(volume float64) {
+	if m.mprisService != nil && m.mprisService.IsActive() {
+		m.mprisService.SetVolume(volume)
+	}
+}
+
+// UpdateMPRISPosition 更新MPRIS播放位置
+func (m *MediaKeyService) UpdateMPRISPosition(position int64) {
+	if m.mprisService != nil && m.mprisService.IsActive() {
+		m.mprisService.SetPositionMicroseconds(position)
+	}
+}
+
+// EmitMPRISSeeked 发射MPRIS Seeked信号
+func (m *MediaKeyService) EmitMPRISSeeked(position int64) {
+	if m.mprisService != nil && m.mprisService.IsActive() {
+		m.mprisService.EmitSeeked(position)
+	}
+}
+
+// ==================== 前端调用的MPRIS更新方法 ====================
+
+// UpdatePlaybackStatus 更新播放状态（供前端调用）
+func (m *MediaKeyService) UpdatePlaybackStatus(status string) map[string]any {
+	log.Printf("🎵 前端请求更新播放状态: %s", status)
+
+	m.UpdateMPRISPlaybackStatus(status)
+
+	return map[string]any{
+		"success": true,
+		"message": "播放状态已更新",
+		"status":  status,
+	}
+}
+
+// UpdateSongMetadata 更新歌曲元数据（供前端调用）
+func (m *MediaKeyService) UpdateSongMetadata(title, artist, album, artUrl string, duration int64) map[string]any {
+	log.Printf("🎵 前端请求更新歌曲元数据: %s - %s", title, artist)
+
+	m.UpdateMPRISMetadata(title, artist, album, artUrl, duration)
+
+	return map[string]any{
+		"success": true,
+		"message": "歌曲元数据已更新",
+		"title":   title,
+		"artist":  artist,
+		"album":   album,
+	}
+}
+
+// UpdatePlayerVolume 更新播放器音量（供前端调用）
+func (m *MediaKeyService) UpdatePlayerVolume(volume float64) map[string]any {
+	log.Printf("🎵 前端请求更新音量: %.2f", volume)
+
+	m.UpdateMPRISVolume(volume)
+
+	return map[string]any{
+		"success": true,
+		"message": "音量已更新",
+		"volume":  volume,
+	}
+}
+
+// UpdatePlayerPosition 更新播放位置（供前端调用）
+func (m *MediaKeyService) UpdatePlayerPosition(position int64) map[string]any {
+	// 位置更新比较频繁，减少日志输出
+	// log.Printf("🎵 前端请求更新播放位置: %d微秒", position)
+
+	m.UpdateMPRISPosition(position)
+
+	return map[string]any{
+		"success":  true,
+		"message":  "播放位置已更新",
+		"position": position,
+	}
+}
+
+// NotifySeek 通知跳转事件（供前端调用）
+func (m *MediaKeyService) NotifySeek(position int64) map[string]any {
+	log.Printf("🎵 前端通知跳转事件: %d微秒", position)
+
+	m.EmitMPRISSeeked(position)
+
+	return map[string]any{
+		"success":  true,
+		"message":  "跳转事件已发射",
+		"position": position,
 	}
 }

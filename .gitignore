@@ -1,3 +1,8 @@
 frontend/test-volume-icon.html
 lyric/*
 frontend/node_modules/*
+frontend/bindings
+frontend/dist
+.task
+bin
+wmplayer
