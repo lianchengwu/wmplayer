@@ -48,24 +48,12 @@ jobs:
           go install github.com/wailsapp/wails/v3/cmd/wails3@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
 
-      - name: Download & Prepare KuGouMusicApi
+      - name: Download KuGouMusicApi Binary (Linux)
         run: |
-          echo "⬇️ 正在下载 MakcRe/KuGouMusicApi 最新 release..."
-          mkdir -p bin/api
-          API_URL=$(curl -s https://api.github.com/repos/MakcRe/KuGouMusicApi/releases/latest | grep "tarball_url" | cut -d '"' -f 4)
-          if [ -z "$API_URL" ]; then
-            API_URL="https://github.com/MakcRe/KuGouMusicApi/archive/refs/heads/master.tar.gz"
-          fi
-          curl -L "$API_URL" -o api_source.tar.gz
-          tar -xzf api_source.tar.gz --strip-components=1 -C bin/api
-          rm api_source.tar.gz
-
-          cd bin/api
-          npm install --omit=dev
-          # 使用 pkg 打包为独立单二进制文件
-          npx --yes @yao-pkg/pkg app.js --target node18-linux-x64 -o ../KuGouMusicApi || true
-          chmod +x ../KuGouMusicApi || true
-          cd ../..
+          mkdir -p bin
+          echo "⬇️ 正在直接下载 MakcRe/KuGouMusicApi 二进制包 (app_linux)..."
+          curl -f -L https://github.com/MakcRe/KuGouMusicApi/releases/latest/download/app_linux -o bin/KuGouMusicApi
+          chmod +x bin/KuGouMusicApi
 
       - name: Build Frontend & Generate Bindings
         run: |
@@ -84,7 +72,7 @@ jobs:
       - name: Package Linux Archive
         run: |
           cd bin
-          tar -czvf wmplayer-linux-amd64.tar.gz wmplayer KuGouMusicApi api/
+          tar -czvf wmplayer-linux-amd64.tar.gz wmplayer KuGouMusicApi
           cd ..
 
       - name: Upload Linux Artifact
@@ -122,24 +110,12 @@ jobs:
           go install github.com/wailsapp/wails/v3/cmd/wails3@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
 
-      - name: Download & Prepare KuGouMusicApi
+      - name: Download KuGouMusicApi Binary (Windows)
         shell: bash
         run: |
-          mkdir -p bin/api
-          echo "⬇️ 正在下载 MakcRe/KuGouMusicApi 最新 release..."
-          API_URL=$(curl -s https://api.github.com/repos/MakcRe/KuGouMusicApi/releases/latest | grep "zipball_url" | cut -d '"' -f 4)
-          if [ -z "$API_URL" ]; then
-            API_URL="https://github.com/MakcRe/KuGouMusicApi/archive/refs/heads/master.zip"
-          fi
-          curl -L "$API_URL" -o api_source.zip
-          unzip -q api_source.zip
-          mv MakcRe-KuGouMusicApi-*/* bin/api/ || true
-          rm -rf api_source.zip MakcRe-KuGouMusicApi-*
-
-          cd bin/api
-          npm install --omit=dev
-          npx --yes @yao-pkg/pkg app.js --target node18-win-x64 -o ../KuGouMusicApi.exe || true
-          cd ../..
+          mkdir -p bin
+          echo "⬇️ 正在直接下载 MakcRe/KuGouMusicApi 二进制包 (app_win.exe)..."
+          curl -f -L https://github.com/MakcRe/KuGouMusicApi/releases/latest/download/app_win.exe -o bin/KuGouMusicApi.exe
 
       - name: Build Frontend & Generate Bindings
         shell: bash
@@ -161,7 +137,7 @@ jobs:
       - name: Package Windows Zip
         shell: pwsh
         run: |
-          Compress-Archive -Path bin\wmplayer.exe, bin\KuGouMusicApi.exe, bin\api -DestinationPath bin\wmplayer-windows-amd64.zip
+          Compress-Archive -Path bin\wmplayer.exe, bin\KuGouMusicApi.exe -DestinationPath bin\wmplayer-windows-amd64.zip
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
@@ -197,23 +173,12 @@ jobs:
           go install github.com/wailsapp/wails/v3/cmd/wails3@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
 
-      - name: Download & Prepare KuGouMusicApi
+      - name: Download KuGouMusicApi Binary (macOS)
         run: |
-          mkdir -p bin/api
-          echo "⬇️ 正在下载 MakcRe/KuGouMusicApi 最新 release..."
-          API_URL=$(curl -s https://api.github.com/repos/MakcRe/KuGouMusicApi/releases/latest | grep "tarball_url" | cut -d '"' -f 4)
-          if [ -z "$API_URL" ]; then
-            API_URL="https://github.com/MakcRe/KuGouMusicApi/archive/refs/heads/master.tar.gz"
-          fi
-          curl -L "$API_URL" -o api_source.tar.gz
-          tar -xzf api_source.tar.gz --strip-components=1 -C bin/api
-          rm api_source.tar.gz
-
-          cd bin/api
-          npm install --omit=dev
-          npx --yes @yao-pkg/pkg app.js --target node18-macos-x64 -o ../KuGouMusicApi || true
-          chmod +x ../KuGouMusicApi || true
-          cd ../..
+          mkdir -p bin
+          echo "⬇️ 正在直接下载 MakcRe/KuGouMusicApi 二进制包 (app_macos)..."
+          curl -f -L https://github.com/MakcRe/KuGouMusicApi/releases/latest/download/app_macos -o bin/KuGouMusicApi
+          chmod +x bin/KuGouMusicApi
 
       - name: Build Frontend & Generate Bindings
         run: |
@@ -225,12 +190,12 @@ jobs:
 
       - name: Compile wmPlayer .app Bundle (macOS)
         run: |
-          mkdir -p bin/wmplayer.app/Contents/{MacOS,Resources/api}
+          mkdir -p bin/wmplayer.app/Contents/{MacOS,Resources}
           go build -tags production -trimpath -buildvcs=false -ldflags="-w -s" -o bin/wmplayer.app/Contents/MacOS/wmplayer .
           cp build/darwin/icons.icns bin/wmplayer.app/Contents/Resources/ || true
           cp build/darwin/Info.plist bin/wmplayer.app/Contents/ || true
           cp bin/KuGouMusicApi bin/wmplayer.app/Contents/Resources/ || true
-          cp -r bin/api/* bin/wmplayer.app/Contents/Resources/api/ || true
+          cp bin/KuGouMusicApi bin/wmplayer.app/Contents/MacOS/ || true
 
       - name: Package macOS Zip
         run: |
@@ -261,7 +226,7 @@ jobs:
       - name: Organize release files
         run: |
           mkdir -p release_assets
-          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.deb" -o -name "*.AppImage" \) -exec cp {} release_assets/ \;
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) -exec cp {} release_assets/ \;
           ls -lh release_assets/
 
       - name: Publish Release

@@ -60,23 +60,31 @@ func (m *KuGouAPIManager) findExecutable() (string, []string) {
 
 	cwd, _ := os.Getwd()
 
-	binaryName := "KuGouMusicApi"
-	if runtime.GOOS == "windows" {
-		binaryName = "KuGouMusicApi.exe"
+	binaryNames := []string{"KuGouMusicApi"}
+	switch runtime.GOOS {
+	case "windows":
+		binaryNames = []string{"KuGouMusicApi.exe", "app_win.exe", "KuGouMusicApi"}
+	case "darwin":
+		binaryNames = []string{"KuGouMusicApi", "app_macos"}
+	default:
+		binaryNames = []string{"KuGouMusicApi", "app_linux"}
 	}
 
-	candidatePaths := []string{
-		// 1. 同级目录
-		filepath.Join(execDir, binaryName),
-		filepath.Join(cwd, binaryName),
-		// 2. api 子目录
-		filepath.Join(execDir, "api", binaryName),
-		filepath.Join(cwd, "api", binaryName),
-		filepath.Join(execDir, "KuGouMusicApi", binaryName),
-		filepath.Join(cwd, "KuGouMusicApi", binaryName),
-		// 3. macOS App Bundle 资源目录
-		filepath.Join(execDir, "..", "Resources", binaryName),
-		filepath.Join(execDir, "..", "Resources", "api", binaryName),
+	var candidatePaths []string
+	for _, binaryName := range binaryNames {
+		candidatePaths = append(candidatePaths,
+			// 1. 同级目录
+			filepath.Join(execDir, binaryName),
+			filepath.Join(cwd, binaryName),
+			// 2. api 子目录
+			filepath.Join(execDir, "api", binaryName),
+			filepath.Join(cwd, "api", binaryName),
+			filepath.Join(execDir, "KuGouMusicApi", binaryName),
+			filepath.Join(cwd, "KuGouMusicApi", binaryName),
+			// 3. macOS App Bundle 资源目录
+			filepath.Join(execDir, "..", "Resources", binaryName),
+			filepath.Join(execDir, "..", "Resources", "api", binaryName),
+		)
 	}
 
 	for _, p := range candidatePaths {
