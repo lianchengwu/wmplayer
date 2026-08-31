@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"net/url"
-	"time"
 )
 
 // SearchService 搜索服务结构体
@@ -166,7 +164,7 @@ func (s *SearchService) Search(keyword string, page int, pageSize int) SearchRes
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/search/complex", baseApi)
+	requestURL := fmt.Sprintf("%s/search/complex", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -178,13 +176,8 @@ func (s *SearchService) Search(keyword string, page int, pageSize int) SearchRes
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return SearchResponse{
 			Success: false,
@@ -395,7 +388,7 @@ func (s *SearchService) GetHotSearch() HotSearchResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/search/hot", baseApi)
+	requestURL := fmt.Sprintf("%s/search/hot", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -404,13 +397,8 @@ func (s *SearchService) GetHotSearch() HotSearchResponse {
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return HotSearchResponse{
 			Success: false,
@@ -536,7 +524,7 @@ func (s *SearchService) GetSearchSuggest(keyword string) SearchSuggestResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/search/suggest", baseApi)
+	requestURL := fmt.Sprintf("%s/search/suggest", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -546,13 +534,8 @@ func (s *SearchService) GetSearchSuggest(keyword string) SearchSuggestResponse {
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return SearchSuggestResponse{
 			Success: false,
@@ -667,7 +650,7 @@ func (s *SearchService) SearchSongs(keyword string, page int, pageSize int) Sear
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/search", baseApi)
+	requestURL := fmt.Sprintf("%s/search", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -680,13 +663,8 @@ func (s *SearchService) SearchSongs(keyword string, page int, pageSize int) Sear
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return SearchResponse{
 			Success: false,
@@ -805,7 +783,7 @@ func (s *SearchService) SearchArtists(keyword string, page int, pageSize int) Se
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/search", baseApi)
+	requestURL := fmt.Sprintf("%s/search", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -818,13 +796,8 @@ func (s *SearchService) SearchArtists(keyword string, page int, pageSize int) Se
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return SearchResponse{
 			Success: false,
@@ -929,7 +902,7 @@ func (s *SearchService) SearchPlaylists(keyword string, page int, pageSize int) 
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/search", baseApi)
+	requestURL := fmt.Sprintf("%s/search", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -942,13 +915,8 @@ func (s *SearchService) SearchPlaylists(keyword string, page int, pageSize int) 
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return SearchResponse{
 			Success: false,
@@ -1059,7 +1027,7 @@ func (s *SearchService) SearchAlbums(keyword string, page int, pageSize int) Sea
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/search", baseApi)
+	requestURL := fmt.Sprintf("%s/search", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -1072,13 +1040,8 @@ func (s *SearchService) SearchAlbums(keyword string, page int, pageSize int) Sea
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return SearchResponse{
 			Success: false,
@@ -1188,7 +1151,7 @@ func (s *SearchService) SearchMVs(keyword string, page int, pageSize int) Search
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/search", baseApi)
+	requestURL := fmt.Sprintf("%s/search", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -1201,13 +1164,8 @@ func (s *SearchService) SearchMVs(keyword string, page int, pageSize int) Search
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return SearchResponse{
 			Success: false,

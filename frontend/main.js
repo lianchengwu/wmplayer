@@ -1,4 +1,4 @@
-
+import "@fortawesome/fontawesome-free/css/all.min.css";
 import {Window, Events} from "@wailsio/runtime";
 import {initLoginModule, getLoginStatus} from "./login.js";
 import {initHomePage} from "./homepage.js";

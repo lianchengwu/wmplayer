@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"net/url"
-	"time"
 )
 
 // DiscoverService 处理发现页面相关的服务
@@ -145,7 +143,7 @@ func (d *DiscoverService) GetNewAlbumsByCategory() NewAlbumCategoryResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/top/album", baseApi)
+	requestURL := fmt.Sprintf("%s/top/album", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -154,13 +152,8 @@ func (d *DiscoverService) GetNewAlbumsByCategory() NewAlbumCategoryResponse {
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		log.Printf("新碟上架API请求失败: %v", err)
 		return NewAlbumCategoryResponse{
@@ -267,7 +260,7 @@ func (d *DiscoverService) GetNewSongs() NewSongResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/top/song", baseApi)
+	requestURL := fmt.Sprintf("%s/top/song", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -276,13 +269,8 @@ func (d *DiscoverService) GetNewSongs() NewSongResponse {
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return NewSongResponse{
 			Success: false,
@@ -411,7 +399,7 @@ func (d *DiscoverService) GetNewAlbums() NewAlbumResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/top/album", baseApi)
+	requestURL := fmt.Sprintf("%s/top/album", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -422,13 +410,8 @@ func (d *DiscoverService) GetNewAlbums() NewAlbumResponse {
 
 	log.Printf("调用新碟上架API: %s", requestURL)
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		log.Printf("新碟上架API请求失败: %v", err)
 		return NewAlbumResponse{
@@ -550,7 +533,7 @@ func (d *DiscoverService) GetRecommendSongs(category string) RecommendSongRespon
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/top/card", baseApi)
+	requestURL := fmt.Sprintf("%s/top/card", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -562,13 +545,8 @@ func (d *DiscoverService) GetRecommendSongs(category string) RecommendSongRespon
 
 	log.Printf("调用推荐歌曲API: %s (category: %s, card_id: %s)", requestURL, category, cardID)
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return RecommendSongResponse{
 			Success: false,

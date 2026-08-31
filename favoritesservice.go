@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // FavoritesService 处理我喜欢的页面相关的服务
@@ -130,7 +128,7 @@ func (f *FavoritesService) AddFavorite(request AddFavoriteRequest) AddFavoriteRe
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/playlist/tracks/add", baseApi)
+	requestURL := fmt.Sprintf("%s/playlist/tracks/add", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -143,13 +141,8 @@ func (f *FavoritesService) AddFavorite(request AddFavoriteRequest) AddFavoriteRe
 
 	log.Printf("调用添加收藏API: %s", requestURL)
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return AddFavoriteResponse{
 			Success: false,
@@ -241,7 +234,7 @@ func (f *FavoritesService) GetUserPlaylists() PlaylistResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/user/playlist", baseApi)
+	requestURL := fmt.Sprintf("%s/user/playlist", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -253,13 +246,8 @@ func (f *FavoritesService) GetUserPlaylists() PlaylistResponse {
 
 	log.Printf("调用用户歌单API: %s", requestURL)
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return PlaylistResponse{
 			Success: false,
@@ -445,7 +433,7 @@ func (f *FavoritesService) GetPlaylistSongs(globalCollectionID string) AlbumSong
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/playlist/track/all", baseApi)
+	requestURL := fmt.Sprintf("%s/playlist/track/all", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -458,13 +446,8 @@ func (f *FavoritesService) GetPlaylistSongs(globalCollectionID string) AlbumSong
 
 	log.Printf("调用歌单歌曲API: %s", requestURL)
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		log.Printf("歌单歌曲API请求失败: %v", err)
 		return AlbumSongsResponse{
@@ -638,7 +621,7 @@ func (f *FavoritesService) GetFavoriteSongsForAI(globalCollectionID string) Albu
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/playlist/track/all", baseApi)
+	requestURL := fmt.Sprintf("%s/playlist/track/all", GetBaseAPI())
 
 	// 构建查询参数 - 使用适中的pagesize获取更多歌曲用于AI推荐
 	queryParams := url.Values{}
@@ -651,13 +634,8 @@ func (f *FavoritesService) GetFavoriteSongsForAI(globalCollectionID string) Albu
 
 	log.Printf("调用AI推荐专用歌单歌曲API: %s", requestURL)
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		log.Printf("AI推荐歌单歌曲API请求失败: %v", err)
 		return AlbumSongsResponse{

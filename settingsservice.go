@@ -93,18 +93,11 @@ type BehaviorSettings struct {
 
 // getSettingsPath 获取设置文件路径
 func (s *SettingsService) getSettingsPath() (string, error) {
-	homeDir, err := os.UserHomeDir()
+	configDir, err := GetAppConfigDir()
 	if err != nil {
-		return "", fmt.Errorf("无法获取用户主目录: %v", err)
+		return "", fmt.Errorf("无法获取配置目录: %v", err)
 	}
-	
-	configDir := filepath.Join(homeDir, ".config", "gomusic")
-	
-	// 确保配置目录存在
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		return "", fmt.Errorf("无法创建配置目录: %v", err)
-	}
-	
+
 	return filepath.Join(configDir, "settings.json"), nil
 }
 

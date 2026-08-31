@@ -19,14 +19,12 @@ var GlobalCookieManager = &CookieManager{}
 
 // GetCookieFilePath 获取cookie文件路径
 func GetCookieFilePath() (string, error) {
-	homeDir, err := os.UserHomeDir()
+	configDir, err := GetAppConfigDir()
 	if err != nil {
-		return "", fmt.Errorf("获取用户主目录失败: %v", err)
+		return "", fmt.Errorf("获取配置目录失败: %v", err)
 	}
-	
-	configDir := filepath.Join(homeDir, ".config", "gomusic")
+
 	cookieFile := filepath.Join(configDir, "cookies.txt")
-	
 	return cookieFile, nil
 }
 

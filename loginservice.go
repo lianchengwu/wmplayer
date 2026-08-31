@@ -81,24 +81,12 @@ func saveCookieToFile(token string, userid int64) error {
 
 // saveLoginMethodToFile 保存登录方式到指定文件
 func saveLoginMethodToFile(loginMethod string) error {
-	// 获取用户主目录
-	homeDir, err := os.UserHomeDir()
+	configDir, err := GetAppConfigDir()
 	if err != nil {
-		return fmt.Errorf("获取用户主目录失败: %v", err)
+		return fmt.Errorf("获取配置目录失败: %v", err)
 	}
 
-	// 创建配置目录路径
-	configDir := filepath.Join(homeDir, ".config", "gomusic")
-
-	// 确保目录存在
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		return fmt.Errorf("创建配置目录失败: %v", err)
-	}
-
-	// 创建登录方式文件路径
 	loginMethodFile := filepath.Join(configDir, "login_method.txt")
-
-	// 写入文件
 	if err := os.WriteFile(loginMethodFile, []byte(loginMethod), 0644); err != nil {
 		return fmt.Errorf("写入登录方式文件失败: %v", err)
 	}
@@ -108,19 +96,16 @@ func saveLoginMethodToFile(loginMethod string) error {
 
 // readLoginMethodFromFile 从文件读取登录方式
 func readLoginMethodFromFile() (string, error) {
-	homeDir, err := os.UserHomeDir()
+	configDir, err := GetAppConfigDir()
 	if err != nil {
-		return "", fmt.Errorf("获取用户主目录失败: %v", err)
+		return "unknown", nil
 	}
 
-	loginMethodFile := filepath.Join(homeDir, ".config", "gomusic", "login_method.txt")
-
-	// 检查文件是否存在
+	loginMethodFile := filepath.Join(configDir, "login_method.txt")
 	if _, err := os.Stat(loginMethodFile); os.IsNotExist(err) {
-		return "unknown", nil // 如果文件不存在，返回unknown而不是错误
+		return "unknown", nil
 	}
 
-	// 读取文件内容
 	content, err := os.ReadFile(loginMethodFile)
 	if err != nil {
 		return "", fmt.Errorf("读取登录方式文件失败: %v", err)
@@ -144,15 +129,10 @@ func (l *LoginService) SendCaptcha(mobile string) CaptchaResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/captcha/sent?mobile=%s", baseApi, url.QueryEscape(mobile))
+	requestURL := fmt.Sprintf("%s/captcha/sent?mobile=%s", GetBaseAPI(), url.QueryEscape(mobile))
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return CaptchaResponse{
 			Success: false,
@@ -248,15 +228,10 @@ func (l *LoginService) LoginWithPhone(mobile, code string) LoginResponse {
 
 	// 构建请求URL
 	requestURL := fmt.Sprintf("%s/login/cellphone?mobile=%s&code=%s",
-		baseApi, url.QueryEscape(mobile), url.QueryEscape(code))
+		GetBaseAPI(), url.QueryEscape(mobile), url.QueryEscape(code))
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return LoginResponse{
 			Success: false,
@@ -403,15 +378,10 @@ func (l *LoginService) GetUserDetail() UserDetailResponse {
 
 	// 构建请求URL
 	requestURL := fmt.Sprintf("%s/user/detail?cookie=%s&timestamp=%d",
-		baseApi, url.QueryEscape(cookie), time.Now().UnixMilli())
+		GetBaseAPI(), url.QueryEscape(cookie), time.Now().UnixMilli())
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return UserDetailResponse{
 			Success: false,
@@ -525,15 +495,10 @@ func (l *LoginService) GetVipDetail() VipDetailResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/user/vip/detail?cookie=%s", baseApi, url.QueryEscape(cookie))
+	requestURL := fmt.Sprintf("%s/user/vip/detail?cookie=%s", GetBaseAPI(), url.QueryEscape(cookie))
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return VipDetailResponse{
 			Success: false,
@@ -697,15 +662,10 @@ func (l *LoginService) ClaimDailyVip() LoginResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/youth/day/vip?cookie=%s", baseApi, url.QueryEscape(cookie))
+	requestURL := fmt.Sprintf("%s/youth/day/vip?cookie=%s", GetBaseAPI(), url.QueryEscape(cookie))
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return LoginResponse{
 			Success: false,
@@ -761,15 +721,10 @@ func (l *LoginService) ClaimDailyVip() LoginResponse {
 // GenerateQRKey 生成二维码登录Key
 func (l *LoginService) GenerateQRKey() QRKeyResponse {
 	// 构建请求URL，添加时间戳防止缓存
-	requestURL := fmt.Sprintf("%s/login/qr/key?timestamp=%d", baseApi, time.Now().UnixMilli())
+	requestURL := fmt.Sprintf("%s/login/qr/key?timestamp=%d", GetBaseAPI(), time.Now().UnixMilli())
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return QRKeyResponse{
 			Success: false,
@@ -865,15 +820,10 @@ func (l *LoginService) CreateQRCode(key string) QRCodeResponse {
 
 	// 构建请求URL，添加时间戳防止缓存
 	requestURL := fmt.Sprintf("%s/login/qr/create?key=%s&qrimg=true&timestamp=%d",
-		baseApi, url.QueryEscape(key), time.Now().UnixMilli())
+		GetBaseAPI(), url.QueryEscape(key), time.Now().UnixMilli())
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return QRCodeResponse{
 			Success: false,
@@ -960,15 +910,10 @@ func (l *LoginService) CheckQRStatus(key string) QRStatusResponse {
 
 	// 构建请求URL，添加时间戳防止缓存
 	requestURL := fmt.Sprintf("%s/login/qr/check?key=%s&timestamp=%d",
-		baseApi, url.QueryEscape(key), time.Now().UnixMilli())
+		GetBaseAPI(), url.QueryEscape(key), time.Now().UnixMilli())
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return QRStatusResponse{
 			Success: false,

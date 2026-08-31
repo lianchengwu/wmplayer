@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"net/url"
-	"time"
 )
 
 // AlbumService 专辑服务
@@ -116,7 +114,7 @@ func (a *AlbumService) GetAlbumDetail(albumID string) AlbumDetailResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/album/detail", baseApi)
+	requestURL := fmt.Sprintf("%s/album/detail", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -128,13 +126,8 @@ func (a *AlbumService) GetAlbumDetail(albumID string) AlbumDetailResponse {
 
 	log.Printf("调用专辑详情API: %s", requestURL)
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		log.Printf("专辑详情API请求失败: %v", err)
 		return AlbumDetailResponse{
@@ -309,7 +302,7 @@ func (a *AlbumService) GetAlbumSongs(albumID string, page int, pageSize int) Alb
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/album/songs", baseApi)
+	requestURL := fmt.Sprintf("%s/album/songs", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -323,13 +316,8 @@ func (a *AlbumService) GetAlbumSongs(albumID string, page int, pageSize int) Alb
 
 	log.Printf("调用专辑歌曲列表API: %s", requestURL)
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		log.Printf("专辑歌曲列表API请求失败: %v", err)
 		return AlbumSongsResponse{
@@ -515,7 +503,7 @@ func (a *AlbumService) GetPlaylistDetail(playlistID string) AlbumDetailResponse 
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/playlist/detail", baseApi)
+	requestURL := fmt.Sprintf("%s/playlist/detail", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -527,13 +515,8 @@ func (a *AlbumService) GetPlaylistDetail(playlistID string) AlbumDetailResponse 
 
 	log.Printf("调用歌单详情API: %s", requestURL)
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		log.Printf("歌单详情API请求失败: %v", err)
 		return AlbumDetailResponse{
@@ -701,7 +684,7 @@ func (a *AlbumService) GetPlaylistSongs(playlistID string, page int, pageSize in
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/playlist/track/all", baseApi)
+	requestURL := fmt.Sprintf("%s/playlist/track/all", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -715,13 +698,8 @@ func (a *AlbumService) GetPlaylistSongs(playlistID string, page int, pageSize in
 
 	log.Printf("调用歌单歌曲列表API: %s", requestURL)
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		log.Printf("歌单歌曲列表API请求失败: %v", err)
 		return AlbumSongsResponse{

@@ -63,19 +63,7 @@ type UpdatePlayModeRequest struct {
 
 // getCacheDir 获取缓存目录
 func (p *PlaylistService) getCacheDir() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("获取用户主目录失败: %v", err)
-	}
-
-	cacheDir := filepath.Join(homeDir, ".cache", "gomusic")
-
-	// 确保缓存目录存在
-	if err := os.MkdirAll(cacheDir, 0755); err != nil {
-		return "", fmt.Errorf("创建缓存目录失败: %v", err)
-	}
-
-	return cacheDir, nil
+	return GetAppCacheDir()
 }
 
 // getPlaylistFilePath 获取播放列表文件路径

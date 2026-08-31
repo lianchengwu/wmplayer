@@ -122,7 +122,7 @@ func (h *HomepageService) GetPersonalFM(params FmRequestParams) FmResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/personal/fm", baseApi)
+	requestURL := fmt.Sprintf("%s/personal/fm", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -152,13 +152,8 @@ func (h *HomepageService) GetPersonalFM(params FmRequestParams) FmResponse {
 		requestURL += "?" + queryParams.Encode()
 	}
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return FmResponse{
 			Success: false,
@@ -376,7 +371,7 @@ func (h *HomepageService) GetSongUrl(hash string) SongUrlResponse {
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/song/url", baseApi)
+	requestURL := fmt.Sprintf("%s/song/url", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -386,13 +381,8 @@ func (h *HomepageService) GetSongUrl(hash string) SongUrlResponse {
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return SongUrlResponse{
 			Success: false,
@@ -535,7 +525,7 @@ func (h *HomepageService) searchLyrics(hash string, cookie string) (*LyricsSearc
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/search/lyric", baseApi)
+	requestURL := fmt.Sprintf("%s/search/lyric", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -546,13 +536,8 @@ func (h *HomepageService) searchLyrics(hash string, cookie string) (*LyricsSearc
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return nil, fmt.Errorf("请求失败: %v", err)
 	}
@@ -622,7 +607,7 @@ func (h *HomepageService) getLyrics(id string, accesskey string, cookie string) 
 // getLyricsWithFormat 获取指定格式的歌词内容
 func (h *HomepageService) getLyricsWithFormat(id string, accesskey string, cookie string, format string) (string, error) {
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/lyric", baseApi)
+	requestURL := fmt.Sprintf("%s/lyric", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -635,13 +620,8 @@ func (h *HomepageService) getLyricsWithFormat(id string, accesskey string, cooki
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return "", fmt.Errorf("请求失败: %v", err)
 	}
@@ -684,7 +664,7 @@ func (h *HomepageService) GetDailyRecommend(platform string) DailyRecommendRespo
 	}
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/everyday/recommend", baseApi)
+	requestURL := fmt.Sprintf("%s/everyday/recommend", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -694,13 +674,8 @@ func (h *HomepageService) GetDailyRecommend(platform string) DailyRecommendRespo
 	// 添加查询参数到URL
 	requestURL += "?" + queryParams.Encode()
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return DailyRecommendResponse{
 			Success: false,
@@ -974,7 +949,7 @@ func (h *HomepageService) GetAIRecommend() AIRecommendResponse {
 	}())
 
 	// 构建请求URL
-	requestURL := fmt.Sprintf("%s/ai/recommend", baseApi)
+	requestURL := fmt.Sprintf("%s/ai/recommend", GetBaseAPI())
 
 	// 构建查询参数
 	queryParams := url.Values{}
@@ -986,13 +961,8 @@ func (h *HomepageService) GetAIRecommend() AIRecommendResponse {
 
 	log.Printf("调用AI推荐API: %s", requestURL)
 
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-
-	// 发送GET请求
-	resp, err := client.Get(requestURL)
+	// 发送GET请求（使用全局连接池）
+	resp, err := defaultHTTPClient.Get(requestURL)
 	if err != nil {
 		return AIRecommendResponse{
 			Success: false,

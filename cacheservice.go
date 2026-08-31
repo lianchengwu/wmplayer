@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ type CacheService struct {
 	cacheDir      string
 	mp3Dir        string
 	serverPort    string
+	maxCacheBytes int64             // 最大缓存字节数（默认 2GB）
 	localMusicMap map[string]string // 本地音乐hash到文件路径的映射
 	localMapFile  string            // 本地音乐映射文件路径
 	downloadLocks sync.Map          // songHash -> *sync.Mutex
@@ -58,26 +60,26 @@ type LyricsMessage struct {
 
 // NewCacheService 创建新的缓存服务实例
 func NewCacheService() *CacheService {
-	homeDir, _ := os.UserHomeDir()
-	cacheDir := filepath.Join(homeDir, ".cache", "gomusic")
+	cacheDir, _ := GetAppCacheDir()
 	mp3Dir := filepath.Join(cacheDir, "cache", "mp3")
 	localMapFile := filepath.Join(cacheDir, "cache", "local_music_map.json")
 
 	service := &CacheService{
 		cacheDir:      cacheDir,
 		mp3Dir:        mp3Dir,
-		serverPort:    "18911", // 本地HTTP服务端口
+		serverPort:    "18911",                        // 本地HTTP服务端口
+		maxCacheBytes: 2 * 1024 * 1024 * 1024,         // 默认 2GB
 		localMusicMap: make(map[string]string),
 		localMapFile:  localMapFile,
-		// osdClients 使用 sync.Map，无需初始化
 	}
 
 	// 启动时加载已有的本地音乐映射
 	service.loadLocalMusicMap()
+	// 启动时清理超额缓存
+	go service.enforceCacheLimit()
 
 	return service
 }
-
 // StartHTTPServer 启动本地HTTP文件服务器
 func (c *CacheService) StartHTTPServer() error {
 	return c.StartHTTPServerWithOSDLyrics()
@@ -230,6 +232,64 @@ func (c *CacheService) isValidCachedFile(filePath string) bool {
 
 	return true
 }
+// enforceCacheLimit 检查并执行缓存目录的容量限制与 LRU 清理
+func (c *CacheService) enforceCacheLimit() {
+	if c.mp3Dir == "" {
+		return
+	}
+
+	entries, err := os.ReadDir(c.mp3Dir)
+	if err != nil {
+		return
+	}
+
+	type cacheItem struct {
+		path    string
+		size    int64
+		modTime time.Time
+	}
+
+	var totalSize int64
+	var items []cacheItem
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		totalSize += info.Size()
+		items = append(items, cacheItem{
+			path:    filepath.Join(c.mp3Dir, entry.Name()),
+			size:    info.Size(),
+			modTime: info.ModTime(),
+		})
+	}
+
+	if totalSize <= c.maxCacheBytes {
+		return
+	}
+
+	log.Printf("🧹 缓存已用空间 (%d MB) 超出限制 (%d MB)，开始 LRU 清理...", totalSize/(1024*1024), c.maxCacheBytes/(1024*1024))
+
+	// 按修改时间升序（最旧的排在前面）
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].modTime.Before(items[j].modTime)
+	})
+
+	targetSize := int64(float64(c.maxCacheBytes) * 0.8) // 清理至80%
+	for _, item := range items {
+		if totalSize <= targetSize {
+			break
+		}
+		if err := os.Remove(item.path); err == nil {
+			totalSize -= item.size
+			log.Printf("🗑️ 已清理过期音乐缓存: %s (%d KB)", filepath.Base(item.path), item.size/1024)
+		}
+	}
+}
 
 // isCached 检查文件是否已缓存
 func (c *CacheService) isCached(songHash string) bool {
@@ -295,10 +355,7 @@ func (c *CacheService) downloadAndCache(songHash string, urls []string) (string,
 
 // downloadFile 下载单个文件
 func (c *CacheService) downloadFile(url, filePath string) error {
-	// 创建HTTP客户端，设置超时
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
+	c.enforceCacheLimit()
 
 	// 创建请求
 	req, err := http.NewRequest("GET", url, nil)
@@ -314,12 +371,11 @@ func (c *CacheService) downloadFile(url, filePath string) error {
 	req.Header.Set("Cache-Control", "no-cache")
 
 	// 发送请求
-	resp, err := client.Do(req)
+	resp, err := defaultHTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-
 	// 检查响应状态
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("HTTP状态码: %d", resp.StatusCode)

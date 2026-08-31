@@ -5,13 +5,13 @@ version: '3'
 
 # This information is used to generate the build assets.
 info:
-  companyName: "My Company" # The name of the company
-  productName: "My Product" # The name of the application
-  productIdentifier: "com.mycompany.myproduct" # The unique product identifier
-  description: "A program that does X" # The application description
-  copyright: "(c) 2024, My Company" # Copyright text
-  comments: "Some Product Comments" # Comments
-  version: "v0.0.1" # The application version
+  companyName: "wmplayer"
+  productName: "wmPlayer"
+  productIdentifier: "com.wmplayer.app"
+  description: "基于 Wails3 的现代化跨平台音乐播放器"
+  copyright: "(c) 2026 wmPlayer"
+  comments: "wmPlayer Music Player"
+  version: "v0.1.0"
 
 # Dev mode configuration
 dev_mode:

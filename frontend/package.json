@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@wailsio/runtime": "3.0.0-alpha.76",
+    "@wailsio/runtime": "^3.0.0-beta.16",
     "vite": "^5.0.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.3.1"
+  }
 }

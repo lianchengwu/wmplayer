@@ -94,45 +94,32 @@ function createFolderPathManager() {
 }
 
 // 显示添加文件夹对话框
-function showAddFolderDialog() {
-    // 检查浏览器是否支持 File System Access API
-    if ('showDirectoryPicker' in window) {
-        selectFolderWithAPI();
-    } else {
-        // 降级到传统的输入方式
-        showTraditionalFolderDialog();
-    }
-}
-
-// 使用 File System Access API 选择文件夹
-async function selectFolderWithAPI() {
+async function showAddFolderDialog() {
     try {
-        const directoryHandle = await window.showDirectoryPicker();
-        const folderPath = directoryHandle.name;
-
-        // 存储目录句柄以供后续使用
-        if (!window.directoryHandles) {
-            window.directoryHandles = new Map();
-        }
-        window.directoryHandles.set(folderPath, directoryHandle);
-
-        // 添加到文件夹路径列表
-        if (!musicFolderPaths.includes(folderPath)) {
-            musicFolderPaths.push(folderPath);
-            saveFolderPaths();
-            updatePathListDisplay();
-            showMessage(`已添加文件夹: ${folderPath}`, 'success');
-        } else {
-            showMessage('该文件夹已存在', 'warning');
+        const response = await LocalMusicService.SelectMusicFolder();
+        if (response && response.success && response.path) {
+            const folderPath = response.path;
+            if (!musicFolderPaths.includes(folderPath)) {
+                musicFolderPaths.push(folderPath);
+                saveFolderPaths();
+                updatePathListDisplay();
+                showMessage(`已添加文件夹: ${folderPath}`, 'success');
+                // 自动开始扫描新添加的文件夹
+                await scanMusicFolders();
+            } else {
+                showMessage('该文件夹已在列表中', 'warning');
+            }
+            return;
+        } else if (response && response.message && response.message === '用户取消了选择') {
+            return;
         }
     } catch (error) {
-        if (error.name !== 'AbortError') {
-            console.error('选择文件夹失败:', error);
-            showMessage('选择文件夹失败', 'error');
-        }
+        console.warn('调用原生文件对话框失败，回退到输入弹窗:', error);
     }
-}
 
+    // 降级到传统路径输入弹窗
+    showTraditionalFolderDialog();
+}
 // 传统的文件夹输入对话框
 function showTraditionalFolderDialog() {
     const dialog = document.createElement('div');

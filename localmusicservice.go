@@ -14,6 +14,7 @@ import (
 
 	"github.com/dhowden/tag"
 	"github.com/hajimehoshi/go-mp3"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // LocalMusicService 本地音乐服务结构体
@@ -86,31 +87,47 @@ type AudioFileResponse struct {
 
 // getCacheDir 获取缓存目录
 func (l *LocalMusicService) getCacheDir() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("获取用户主目录失败: %v", err)
-	}
-
-	cacheDir := filepath.Join(homeDir, ".cache", "gomusic")
-
-	// 确保缓存目录存在
-	if err := os.MkdirAll(cacheDir, 0755); err != nil {
-		return "", fmt.Errorf("创建缓存目录失败: %v", err)
-	}
-
-	return cacheDir, nil
+	return GetAppCacheDir()
 }
 
-// SelectMusicFolder 选择音乐文件夹
+// SelectMusicFolder 选择音乐文件夹（调用系统原生对话框）
 func (l *LocalMusicService) SelectMusicFolder() FolderSelectResponse {
-	// 注意：在实际实现中，这里应该调用系统的文件夹选择对话框
-	// 由于Wails3的限制，这里先返回一个示例路径
-	// 在前端可以通过HTML5的文件API来实现文件夹选择
+	app := application.Get()
+	if app == nil {
+		return FolderSelectResponse{
+			Success: false,
+			Message: "应用实例尚未初始化",
+			Path:    "",
+		}
+	}
+
+	dialog := app.Dialog.OpenFile().
+		CanChooseDirectories(true).
+		CanChooseFiles(false).
+		CanCreateDirectories(false).
+		SetTitle("选择本地音乐文件夹")
+
+	selectedPath, err := dialog.PromptForSingleSelection()
+	if err != nil {
+		return FolderSelectResponse{
+			Success: false,
+			Message: fmt.Sprintf("选择文件夹失败: %v", err),
+			Path:    "",
+		}
+	}
+
+	if selectedPath == "" {
+		return FolderSelectResponse{
+			Success: false,
+			Message: "用户取消了选择",
+			Path:    "",
+		}
+	}
 
 	return FolderSelectResponse{
 		Success: true,
-		Message: "请在前端使用文件夹选择功能",
-		Path:    "",
+		Message: "选择成功",
+		Path:    selectedPath,
 	}
 }
 

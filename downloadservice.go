@@ -65,17 +65,22 @@ type DeleteDownloadRecordRequest struct {
 
 // getDownloadRecordsFilePath 获取下载记录文件路径
 func (d *DownloadService) getDownloadRecordsFilePath() (string, error) {
-	homeDir, err := os.UserHomeDir()
+	configDir, err := GetAppConfigDir()
 	if err != nil {
 		return "", err
 	}
 
-	appDir := filepath.Join(homeDir, ".wg-music")
-	if err := os.MkdirAll(appDir, 0755); err != nil {
-		return "", err
+	targetPath := filepath.Join(configDir, "download_records.json")
+	if _, statErr := os.Stat(targetPath); os.IsNotExist(statErr) {
+		if homeDir, hErr := os.UserHomeDir(); hErr == nil {
+			oldPath := filepath.Join(homeDir, ".wg-music", "download_records.json")
+			if _, oldStatErr := os.Stat(oldPath); oldStatErr == nil {
+				return oldPath, nil
+			}
+		}
 	}
 
-	return filepath.Join(appDir, "download_records.json"), nil
+	return targetPath, nil
 }
 
 // loadDownloadRecords 加载下载记录
