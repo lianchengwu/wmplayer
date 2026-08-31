@@ -2901,6 +2901,7 @@ function updateLRCLyricsHighlight(currentTime) {
 // 全局变量来跟踪上次的高亮状态
 let lastActiveLineIndex = -1;
 let lastActiveWordIndex = -1;
+let currentActiveWordElement = null;
 
 // 更新KRC格式歌词高亮（逐字高亮）
 function updateKRCLyricsHighlight(currentTime) {
@@ -2962,26 +2963,27 @@ function updateKRCLyricsHighlight(currentTime) {
         });
     }
 
-    // 更新字级高亮（仅对KRC格式）
-    const allWords = mainLyricsDisplay.querySelectorAll('.lyrics-word');
-    allWords.forEach(word => {
-        if (word.classList.contains('active-word')) {
-            word.classList.remove('active-word');
-        }
-    });
-
     // 字边界时沿用上一帧字索引，避免出现整行瞬间无高亮的空帧
     let displayWordIndex = activeWordIndex;
     if (activeLineIndex >= 0 && displayWordIndex < 0 && activeLineIndex === prevActiveLineIndex && prevActiveWordIndex >= 0) {
         displayWordIndex = prevActiveWordIndex;
     }
 
-    if (activeLineIndex >= 0 && displayWordIndex >= 0) {
-        const activeLine = lyricsLines[activeLineIndex];
-        if (activeLine) {
-            const wordsInLine = activeLine.querySelectorAll('.lyrics-word');
-            if (wordsInLine[displayWordIndex]) {
-                wordsInLine[displayWordIndex].classList.add('active-word');
+    // 更新字级高亮（仅定位更新，避免遍历全量DOM）
+    if (hasLineChanged || displayWordIndex !== prevActiveWordIndex) {
+        if (currentActiveWordElement) {
+            currentActiveWordElement.classList.remove('active-word');
+            currentActiveWordElement = null;
+        }
+
+        if (activeLineIndex >= 0 && displayWordIndex >= 0) {
+            const activeLine = lyricsLines[activeLineIndex];
+            if (activeLine) {
+                const wordsInLine = activeLine.querySelectorAll('.lyrics-word');
+                if (wordsInLine[displayWordIndex]) {
+                    wordsInLine[displayWordIndex].classList.add('active-word');
+                    currentActiveWordElement = wordsInLine[displayWordIndex];
+                }
             }
         }
     }
@@ -3001,31 +3003,27 @@ function updateKRCLyricsHighlight(currentTime) {
 // }
 
 // 滚动到当前歌词行
+// 滚动到当前歌词行（高效偏移计算，避免触发重排）
 function scrollToActiveLyrics(activeLine) {
     if (!activeLine) return;
 
     const lyricsDisplay = document.querySelector('.lyrics-display');
     if (!lyricsDisplay) return;
 
-    // 获取容器和元素的位置信息
-    const containerRect = lyricsDisplay.getBoundingClientRect();
-    const lineRect = activeLine.getBoundingClientRect();
-
     // 计算当前行相对于容器的位置
-    const lineRelativeTop = lineRect.top - containerRect.top + lyricsDisplay.scrollTop;
-    const containerHeight = lyricsDisplay.clientHeight;
-    const lineHeight = lineRect.height;
+    const lineOffsetTop = activeLine.offsetTop;
+    const containerHeight = lyricsDisplay.clientHeight || 400;
+    const lineHeight = activeLine.offsetHeight || 30;
 
     // 计算目标滚动位置（让当前行显示在容器中央偏上一点）
-    const targetScrollTop = lineRelativeTop - (containerHeight * 0.4) + (lineHeight / 2);
+    const targetScrollTop = lineOffsetTop - (containerHeight * 0.4) + (lineHeight / 2);
 
     // 检查是否需要滚动（避免不必要的滚动）
     const currentScrollTop = lyricsDisplay.scrollTop;
     const scrollDifference = Math.abs(targetScrollTop - currentScrollTop);
 
     // 只有当滚动距离超过阈值时才进行滚动
-    if (scrollDifference > 50) {
-        // 使用requestAnimationFrame优化滚动性能
+    if (scrollDifference > 30) {
         requestAnimationFrame(() => {
             lyricsDisplay.scrollTo({
                 top: Math.max(0, targetScrollTop),

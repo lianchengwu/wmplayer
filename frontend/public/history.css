@@ -293,13 +293,16 @@
     padding: 8px 12px; /* 减少padding，给序号更多空间 */
     background: var(--card-bg);
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     cursor: pointer;
     border: 1px solid transparent;
     margin-bottom: 4px;
     gap: 6px; /* 减少到6px，让序号和封面更近 */
     min-height: 56px; /* 适当减少高度 */
     position: relative; /* 确保定位上下文 */
+    content-visibility: auto;
+    contain-intrinsic-size: 56px;
+    contain: content;
 }
 
 .history-list .song-item::before {

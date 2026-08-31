@@ -44,12 +44,12 @@
     --player-progress-bg: rgba(255, 255, 255, 0.3);
     --player-progress-fill: var(--accent-color);
 
-    /* 磨砂玻璃特效变量 */
-    --blur-strength: 20px;
+    /* 磨砂玻璃特效变量 (优化模糊半径减少GPU渲染卡顿) */
+    --blur-strength: 10px;
     --backdrop-opacity: 0.8;
 }
 
-/* 磨砂主题全局背景 */
+/* 磨砂主题全局背景 (移除body上的无意义全局blur提升帧率) */
 [data-theme="frosted"] body {
     background: linear-gradient(135deg, 
         rgba(240, 240, 255, 0.9) 0%, 
@@ -57,8 +57,6 @@
         rgba(245, 255, 240, 0.9) 50%,
         rgba(240, 245, 255, 0.9) 75%,
         rgba(255, 245, 240, 0.9) 100%);
-    backdrop-filter: blur(var(--blur-strength));
-    -webkit-backdrop-filter: blur(var(--blur-strength));
 }
 
 /* 磨砂主题标题栏 */
@@ -67,6 +65,7 @@
     backdrop-filter: blur(var(--blur-strength));
     -webkit-backdrop-filter: blur(var(--blur-strength));
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    transform: translateZ(0);
 }
 
 /* 磨砂主题按钮样式 */
@@ -75,9 +74,7 @@
     color: var(--text-secondary);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 [data-theme="frosted"] .titlebar-btn:hover {
@@ -100,6 +97,7 @@
     backdrop-filter: blur(var(--blur-strength));
     -webkit-backdrop-filter: blur(var(--blur-strength));
     border-right: 1px solid rgba(255, 255, 255, 0.3);
+    transform: translateZ(0);
 }
 
 /* 磨砂主题侧边栏文字和图标 - 增强对比度 */
@@ -134,8 +132,6 @@
 [data-theme="frosted"] .list-item.active {
     background: rgba(99, 102, 241, 0.25);
     color: rgba(99, 102, 241, 1);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
 }
 
 [data-theme="frosted"] .list-item.active i {
@@ -145,24 +141,18 @@
 /* 磨砂主题侧边栏头部 */
 [data-theme="frosted"] .sidebar-header {
     background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 /* 磨砂主题侧边栏分割线 */
 [data-theme="frosted"] .sidebar-divider {
     background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
 }
 
 /* 磨砂主题侧边栏切换按钮 */
 [data-theme="frosted"] .sidebar-toggle-btn {
     background: rgba(255, 255, 255, 0.25);
     color: rgba(20, 20, 25, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
@@ -180,28 +170,26 @@
     text-shadow: 0 1px 3px rgba(255, 255, 255, 0.4);
 }
 
-/* 磨砂主题卡片 */
+/* 磨砂主题卡片 (优化：移除每个子项的独立blur，保留半透明晶莹感) */
 [data-theme="frosted"] .card,
 [data-theme="frosted"] .song-item,
 [data-theme="frosted"] .playlist-card,
 [data-theme="frosted"] .artist-card {
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 [data-theme="frosted"] .card:hover,
 [data-theme="frosted"] .song-item:hover,
 [data-theme="frosted"] .playlist-card:hover,
 [data-theme="frosted"] .artist-card:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.38);
+    border-color: rgba(255, 255, 255, 0.45);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
 }
 
 /* 磨砂主题播放器 */
@@ -210,41 +198,39 @@
     backdrop-filter: blur(var(--blur-strength));
     -webkit-backdrop-filter: blur(var(--blur-strength));
     border-top: 1px solid rgba(255, 255, 255, 0.3);
+    transform: translateZ(0);
 }
 
-/* 磨砂主题播放器底栏 - 增强不透明度 */
+/* 磨砂主题播放器底栏 */
 [data-theme="frosted"] .player-bar {
-    background: rgba(255, 255, 255, 0.45);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(var(--blur-strength));
+    -webkit-backdrop-filter: blur(var(--blur-strength));
     border-top: 1px solid rgba(255, 255, 255, 0.35);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    transform: translateZ(0);
 }
 
 [data-theme="frosted"] .player-controls button,
 [data-theme="frosted"] .player-control-btn {
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.45);
     border-radius: 50%;
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
     color: var(--text-primary);
 }
 
 [data-theme="frosted"] .player-controls button:hover,
 [data-theme="frosted"] .player-control-btn:hover {
-    background: rgba(255, 255, 255, 0.5);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.6);
+    border-color: rgba(255, 255, 255, 0.6);
     transform: scale(1.05);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* 磨砂主题播放器进度条 */
 [data-theme="frosted"] .progress-bar {
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.35);
     border-radius: 4px;
 }
 
@@ -252,8 +238,6 @@
     background: linear-gradient(90deg,
         rgba(99, 102, 241, 0.9) 0%,
         rgba(79, 70, 229, 1) 100%);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
 }
 
 /* 磨砂主题歌曲信息区域 */
@@ -272,9 +256,7 @@
 
 /* 磨砂主题音量控制 */
 [data-theme="frosted"] .volume-slider {
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.35);
 }
 
 [data-theme="frosted"] .volume-slider::-webkit-slider-thumb {
@@ -293,26 +275,22 @@
 
 /* 磨砂主题歌曲封面 */
 [data-theme="frosted"] .song-cover {
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* 磨砂主题播放器额外控制按钮 */
 [data-theme="frosted"] .player-extra-controls button {
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.35);
     color: var(--text-secondary);
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 [data-theme="frosted"] .player-extra-controls button:hover {
-    background: rgba(255, 255, 255, 0.4);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.45);
+    border-color: rgba(255, 255, 255, 0.5);
     color: var(--text-primary);
     transform: translateY(-1px);
 }
@@ -321,10 +299,8 @@
 [data-theme="frosted"] input,
 [data-theme="frosted"] select,
 [data-theme="frosted"] textarea {
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.35);
     border-radius: 8px;
     color: var(--text-primary);
 }
@@ -332,7 +308,7 @@
 [data-theme="frosted"] input:focus,
 [data-theme="frosted"] select:focus,
 [data-theme="frosted"] textarea:focus {
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.45);
     border-color: var(--accent-color);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
@@ -349,41 +325,36 @@
 }
 
 [data-theme="frosted"] ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.35);
     border-radius: 4px;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
 }
 
 [data-theme="frosted"] ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.55);
 }
 
-/* 磨砂主题模态框 - 降低透明度增强可读性 */
+/* 磨砂主题模态框 */
 [data-theme="frosted"] .modal,
 [data-theme="frosted"] .dialog,
 [data-theme="frosted"] .modal-content,
 [data-theme="frosted"] .close-confirm-content {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(var(--blur-strength));
+    -webkit-backdrop-filter: blur(var(--blur-strength));
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    transform: translateZ(0);
 }
 
 /* 磨砂主题模态框遮罩层 */
 [data-theme="frosted"] .modal-overlay {
     background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
 }
 
 /* 磨砂主题登录弹窗头部 */
 [data-theme="frosted"] .modal-header {
     background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.4);
 }
 
@@ -398,9 +369,8 @@
 [data-theme="frosted"] .modal-close-btn {
     background: rgba(255, 255, 255, 0.2);
     color: var(--text-secondary);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.25);
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 [data-theme="frosted"] .modal-close-btn:hover {
@@ -413,18 +383,15 @@
 /* 磨砂主题模态框主体 */
 [data-theme="frosted"] .modal-body {
     background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
 }
 
 /* 磨砂主题登录标签页 */
 [data-theme="frosted"] .login-tabs .tab-btn {
     background: rgba(255, 255, 255, 0.15);
     color: var(--text-secondary);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-bottom: 2px solid transparent;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 [data-theme="frosted"] .login-tabs .tab-btn:hover {
@@ -442,15 +409,13 @@
 
 /* 磨砂主题表单输入框 */
 [data-theme="frosted"] .form-input {
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    background: rgba(255, 255, 255, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.4);
     color: var(--text-primary);
 }
 
 [data-theme="frosted"] .form-input:focus {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.65);
     border-color: rgba(99, 102, 241, 0.8);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
@@ -463,11 +428,10 @@
 [data-theme="frosted"] .login-btn,
 [data-theme="frosted"] .send-code-btn {
     background: rgba(99, 102, 241, 0.9);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(99, 102, 241, 0.5);
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 [data-theme="frosted"] .login-btn:hover,
@@ -480,14 +444,11 @@
 
 /* 磨砂主题关闭确认对话框 */
 [data-theme="frosted"] .close-confirm-modal {
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="frosted"] .close-confirm-message {
     background: rgba(99, 102, 241, 0.15);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(99, 102, 241, 0.25);
 }
 
@@ -504,8 +465,6 @@
 /* 磨砂主题选项按钮 */
 [data-theme="frosted"] .close-option input[type="radio"] + label {
     background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.4);
     color: var(--text-primary);
 }
@@ -520,9 +479,8 @@
 [data-theme="frosted"] .btn-secondary {
     background: rgba(255, 255, 255, 0.3);
     color: var(--text-secondary);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 [data-theme="frosted"] .btn-secondary:hover {
@@ -533,9 +491,8 @@
 
 [data-theme="frosted"] .btn-primary {
     background: rgba(99, 102, 241, 0.9);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(99, 102, 241, 0.5);
+    transition: background 0.2s ease;
 }
 
 [data-theme="frosted"] .btn-primary:hover {
@@ -554,8 +511,6 @@
     background: linear-gradient(90deg, 
         rgba(99, 102, 241, 0.8) 0%, 
         rgba(79, 70, 229, 0.9) 100%);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
 }
 
 /* 磨砂主题特殊效果 */
@@ -575,8 +530,7 @@
         rgba(245, 255, 240, 0.95) 50%,
         rgba(240, 245, 255, 0.95) 75%,
         rgba(255, 245, 240, 0.95) 100%);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
+    transform: translateZ(0);
 }
 
 [data-theme="frosted"] .immersive-controls button {
@@ -590,7 +544,7 @@
 }
 
 /* 骨架屏动画变量 */
-:root[data-theme="frosted"] {
+::root[data-theme="frosted"] {
     --skeleton-bg: rgba(255, 255, 255, 0.2);
     --skeleton-shimmer: rgba(255, 255, 255, 0.4);
 }
@@ -601,8 +555,6 @@
         var(--skeleton-bg) 25%, 
         var(--skeleton-shimmer) 50%, 
         var(--skeleton-bg) 75%);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
 }
 
 /* 设置页面下拉列表磨砂浅色主题 */

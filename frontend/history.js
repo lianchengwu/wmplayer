@@ -388,103 +388,97 @@ function renderHistoryList(historyData) {
     });
 }
 
-// 优化的渲染函数 - 分批处理避免阻塞
+// 优化的渲染函数 - 正确的分批索引处理，避免重复渲染和主线程阻塞
 function renderHistoryListOptimized(historyData, container) {
     try {
-        // 按日期分组
         const groupedRecords = groupRecordsByDate(historyData.records);
-
-        // 创建文档片段，减少DOM操作
-        const fragment = document.createDocumentFragment();
-
-        // 分批渲染，每批处理30条记录（减少批次大小，提高响应性）
-        const batchSize = 30;
-        let processedCount = 0;
+        const groupEntries = Object.entries(groupedRecords);
         const totalRecords = historyData.records.length;
 
+        container.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+        let currentGroupIdx = 0;
+        let currentRecordIdx = 0;
+        let currentGroupDiv = null;
+        let currentSongsContainer = null;
+        const batchSize = 40;
+
         function renderBatch() {
-            // 检查是否被取消
             if (window.historyPageManager && window.historyPageManager.renderCancelled) {
-                console.log('⏹️ 渲染被取消，停止处理');
                 return;
             }
 
+            let processedInBatch = 0;
             const startTime = performance.now();
-            let currentBatchCount = 0;
 
-            for (const [date, records] of Object.entries(groupedRecords)) {
-                if (processedCount >= totalRecords) break;
+            while (currentGroupIdx < groupEntries.length && processedInBatch < batchSize) {
+                const [date, records] = groupEntries[currentGroupIdx];
 
-                // 创建日期组容器
-                const groupDiv = document.createElement('div');
-                groupDiv.className = 'history-group';
+                // 如果开始一个新的日期组
+                if (currentRecordIdx === 0) {
+                    currentGroupDiv = document.createElement('div');
+                    currentGroupDiv.className = 'history-group';
 
-                // 添加日期标题
-                const dateDiv = document.createElement('div');
-                dateDiv.className = 'history-date';
-                dateDiv.textContent = date;
-                groupDiv.appendChild(dateDiv);
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = 'history-date';
+                    dateDiv.textContent = date;
+                    currentGroupDiv.appendChild(dateDiv);
 
-                // 添加表头
-                const headerDiv = document.createElement('div');
-                headerDiv.className = 'history-header';
-                headerDiv.innerHTML = `
-                    <div class="header-index">#</div>
-                    <div class="header-cover"></div>
-                    <div class="header-song">歌曲</div>
-                    <div class="header-count">播放次数</div>
-                    <div class="header-duration">时长</div>
-                    <div class="header-time">播放时间</div>
-                `;
-                groupDiv.appendChild(headerDiv);
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = 'history-header';
+                    headerDiv.innerHTML = `
+                        <div class="header-index">#</div>
+                        <div class="header-cover"></div>
+                        <div class="header-song">歌曲</div>
+                        <div class="header-count">播放次数</div>
+                        <div class="header-duration">时长</div>
+                        <div class="header-time">播放时间</div>
+                    `;
+                    currentGroupDiv.appendChild(headerDiv);
 
-                // 创建歌曲容器
-                const songsContainer = document.createElement('div');
-                songsContainer.className = 'songs-container';
+                    currentSongsContainer = document.createElement('div');
+                    currentSongsContainer.className = 'songs-container';
+                    currentGroupDiv.appendChild(currentSongsContainer);
 
-                // 渲染当前批次的记录
-                for (let i = 0; i < records.length && currentBatchCount < batchSize; i++) {
-                    const record = records[i];
-                    const songItem = createSongItemElement(record, i);
-                    songsContainer.appendChild(songItem);
+                    fragment.appendChild(currentGroupDiv);
+                }
 
-                    processedCount++;
-                    currentBatchCount++;
+                // 处理当前组内的记录
+                while (currentRecordIdx < records.length && processedInBatch < batchSize) {
+                    const record = records[currentRecordIdx];
+                    const songItem = createSongItemElement(record, currentRecordIdx);
+                    currentSongsContainer.appendChild(songItem);
 
-                    // 如果达到批次大小或时间限制，暂停并安排下一批
-                    if (currentBatchCount >= batchSize || (performance.now() - startTime) > 16) {
+                    currentRecordIdx++;
+                    processedInBatch++;
+
+                    if (performance.now() - startTime > 16) {
                         break;
                     }
                 }
 
-                groupDiv.appendChild(songsContainer);
-                fragment.appendChild(groupDiv);
+                // 如果当前组已处理完毕，切换到下一组
+                if (currentRecordIdx >= records.length) {
+                    currentGroupIdx++;
+                    currentRecordIdx = 0;
+                }
 
-                if (currentBatchCount >= batchSize) break;
+                if (performance.now() - startTime > 16) {
+                    break;
+                }
             }
 
-            // 将当前批次添加到DOM
-            if (processedCount === currentBatchCount) {
-                // 第一批，清空容器并添加
-                container.innerHTML = '';
-                container.appendChild(fragment);
-            } else {
-                // 后续批次，追加到现有内容
-                container.appendChild(fragment);
-            }
+            container.appendChild(fragment);
 
-            // 如果还有未处理的记录，继续下一批
-            if (processedCount < totalRecords) {
-                // 使用 setTimeout 而不是 requestAnimationFrame，给其他任务更多时间
-                setTimeout(renderBatch, 10);
+            if (currentGroupIdx < groupEntries.length) {
+                requestAnimationFrame(renderBatch);
             } else {
                 console.log(`✅ 播放历史渲染完成 - 共 ${totalRecords} 条记录`);
             }
         }
 
-        // 开始第一批渲染
         renderBatch();
-
     } catch (error) {
         console.error('渲染播放历史时出错:', error);
         container.innerHTML = `

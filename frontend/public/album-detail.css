@@ -189,9 +189,12 @@
     gap: 16px;
     align-items: center;
     padding: 12px 24px;
-    transition: all 0.2s ease;
+    transition: background 0.15s ease, color 0.15s ease;
     cursor: pointer;
     border-bottom: 1px solid var(--border-color);
+    content-visibility: auto;
+    contain-intrinsic-size: 56px;
+    contain: content;
 }
 
 .album-song-item:last-child {
@@ -206,7 +209,6 @@
     background: var(--accent-color-alpha);
     color: var(--accent-color);
 }
-
 .song-number {
     display: flex;
     align-items: center;
@@ -526,8 +528,6 @@
         font-size: 13px;
     }
 }
-}
-
 .all-songs-loaded {
     background: var(--success-bg, rgba(34, 197, 94, 0.1));
     border: 1px solid var(--success-color, #22c55e);

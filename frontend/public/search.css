@@ -504,7 +504,9 @@ body.dark-theme .load-more-info {
     border: 1px solid var(--border-color);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    content-visibility: auto;
+    contain-intrinsic-size: 140px;
 }
 
 .author_name-card:hover {
@@ -635,9 +637,10 @@ body.dark-theme .load-more-info {
     border-radius: 12px;
     padding: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    content-visibility: auto;
+    contain-intrinsic-size: 220px;
 }
-
 .content-card:hover {
     background: var(--bg-hover);
     border-color: var(--accent-color);

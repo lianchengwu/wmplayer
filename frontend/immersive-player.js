@@ -721,7 +721,7 @@ class ImmersivePlayer {
     }
 
     syncLyricsHighlight() {
-        if (!this.lyricsDisplay) return;
+        if (!this.isActive || !this.lyricsDisplay) return;
 
         // 防抖处理，避免频繁同步导致卡顿
         if (this.syncHighlightTimeout) {
@@ -729,6 +729,8 @@ class ImmersivePlayer {
         }
 
         this.syncHighlightTimeout = setTimeout(() => {
+            if (!this.isActive) return;
+
             // 获取主页面的歌词显示组件
             const mainLyricsDisplay = document.querySelector('#lyricsTab .lyrics-display');
             if (!mainLyricsDisplay) return;
@@ -739,52 +741,43 @@ class ImmersivePlayer {
 
             // 确保两边的歌词行数量一致
             if (mainLyricsLines.length !== immersiveLyricsLines.length) {
-                console.log('🎵 歌词行数不一致，重新同步歌词内容');
                 this.syncLyrics();
                 return;
             }
 
-            // 同步高亮状态 - 包括行级和字级高亮
+            // 寻找主页面当前激活的歌词行
             let activeIndex = -1;
-            let hasChanges = false;
-
-            mainLyricsLines.forEach((mainLine, index) => {
-                const immersiveLine = immersiveLyricsLines[index];
-                if (immersiveLine) {
-                    const shouldBeActive = mainLine.classList.contains('active');
-                    const isCurrentlyActive = immersiveLine.classList.contains('active');
-
-                    if (shouldBeActive !== isCurrentlyActive) {
-                        hasChanges = true;
-                        if (shouldBeActive) {
-                            immersiveLine.classList.add('active');
-                            activeIndex = index;
-                            // 移除频繁的日志输出
-                        } else {
-                            immersiveLine.classList.remove('active');
-                            // 移除所有高亮相关的类
-                            immersiveLine.classList.remove('jelly-active', 'current-playing');
-                        }
-                    } else if (shouldBeActive) {
-                        activeIndex = index;
-                    }
-
-                    // 同步KRC格式的逐字高亮和当前行样式
-                    this.syncWordHighlight(mainLine, immersiveLine);
-                }
-            });
-
-            // 果冻效果已移除，不再触发动画
-
-            // 只有当高亮状态发生变化时才滚动，避免不必要的滚动
-            if (hasChanges && activeIndex >= 0) {
-                const activeLine = immersiveLyricsLines[activeIndex];
-                if (activeLine) {
-                    console.log(`🎵 高亮变化，滚动到第${activeIndex}行`);
-                    this.scrollToActiveLyric(activeLine);
+            for (let i = 0; i < mainLyricsLines.length; i++) {
+                if (mainLyricsLines[i].classList.contains('active')) {
+                    activeIndex = i;
+                    break;
                 }
             }
-        }, 16); // 16ms防抖，约60fps的响应速度
+
+            // 仅在激活行变更或当前行需要逐字同步时更新
+            if (activeIndex !== this.currentActiveLyricsIndex) {
+                // 清除上一行的状态
+                if (this.currentActiveLyricsIndex >= 0 && immersiveLyricsLines[this.currentActiveLyricsIndex]) {
+                    const prevLine = immersiveLyricsLines[this.currentActiveLyricsIndex];
+                    prevLine.classList.remove('active', 'jelly-active', 'current-playing', 'progressive-highlight');
+                    const words = prevLine.querySelectorAll('.lyrics-word');
+                    words.forEach(w => w.classList.remove('played', 'unplayed'));
+                }
+
+                // 设置新行的状态
+                if (activeIndex >= 0 && immersiveLyricsLines[activeIndex]) {
+                    const newLine = immersiveLyricsLines[activeIndex];
+                    newLine.classList.add('active');
+                    this.syncWordHighlight(mainLyricsLines[activeIndex], newLine);
+                    this.scrollToActiveLyric(newLine);
+                }
+
+                this.currentActiveLyricsIndex = activeIndex;
+            } else if (activeIndex >= 0 && immersiveLyricsLines[activeIndex]) {
+                // 同一行内的逐字高亮更新
+                this.syncWordHighlight(mainLyricsLines[activeIndex], immersiveLyricsLines[activeIndex]);
+            }
+        }, 16);
     }
 
     // 同步渐进式高亮（KRC格式）- 高亮当前字符之前的所有字符

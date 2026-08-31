@@ -771,15 +771,18 @@ function updateLocalMusicDisplay() {
         localContent.appendChild(musicList);
     }
     
-    // 更新音乐列表内容
+    // 更新音乐列表内容（使用DocumentFragment减少DOM重排）
     const musicListContent = musicList.querySelector('.local-music-content');
     if (musicListContent) {
         musicListContent.innerHTML = '';
+        const fragment = document.createDocumentFragment();
         
         localMusicFiles.forEach((musicFile, index) => {
             const songItem = createSongItem(musicFile, index);
-            musicListContent.appendChild(songItem);
+            fragment.appendChild(songItem);
         });
+        
+        musicListContent.appendChild(fragment);
     }
 }
 

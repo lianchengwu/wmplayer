@@ -661,9 +661,12 @@
     gap: 16px;
     padding: 12px 20px;
     border-bottom: 1px solid var(--border-color);
-    transition: all 0.2s ease;
+    transition: background 0.15s ease, border-color 0.15s ease;
     cursor: pointer;
     align-items: center;
+    content-visibility: auto;
+    contain-intrinsic-size: 56px;
+    contain: content;
 }
 
 .local-song-item:hover {
@@ -1150,10 +1153,12 @@
     gap: 16px;
     padding: 12px 20px;
     border-bottom: 1px solid var(--border-light);
-    transition: all 0.2s ease;
+    transition: background 0.15s ease, border-color 0.15s ease;
     cursor: pointer;
+    content-visibility: auto;
+    contain-intrinsic-size: 56px;
+    contain: content;
 }
-
 .folder-song-item:hover {
     background: var(--bg-hover);
 }
