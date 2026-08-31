@@ -37,6 +37,9 @@ func main() {
 	log.Printf("XDG_CURRENT_DESKTOP: %s", os.Getenv("XDG_CURRENT_DESKTOP"))
 	log.Printf("WAYLAND_DISPLAY: %s", os.Getenv("WAYLAND_DISPLAY"))
 
+	// 自动启动/连接 KuGouMusicApi 后台服务
+	GlobalAPIManager.Start()
+
 	// 在程序启动时初始化Cookie管理器
 	log.Printf("🍪 初始化Cookie管理器...")
 	if err := InitializeCookieManager(); err != nil {
@@ -262,6 +265,7 @@ func main() {
 			cacheService.stopOSDLyricsProcess()
 		}
 
+		GlobalAPIManager.Stop()
 		// 退出程序
 		os.Exit(0)
 	}()
@@ -280,6 +284,8 @@ func main() {
 		log.Printf("🔴 应用退出，清理OSD歌词进程...")
 		cacheService.stopOSDLyricsProcess()
 	}
+	// 应用退出时，停止外部拉起的 API 服务
+	GlobalAPIManager.Stop()
 
 	// 应用退出时，停止HTTP缓存服务器
 	if cacheService != nil {

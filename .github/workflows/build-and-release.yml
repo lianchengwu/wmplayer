@@ -1,0 +1,275 @@
+name: Build & Release wmPlayer
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ==========================================
+  # 1. Linux Build (Ubuntu)
+  # ==========================================
+  build-linux:
+    name: Build Linux (x86_64)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Linux Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev libsoup-3.0-dev
+
+      - name: Install Wails v3 CLI
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
+      - name: Download & Prepare KuGouMusicApi
+        run: |
+          echo "⬇️ 正在下载 MakcRe/KuGouMusicApi 最新 release..."
+          mkdir -p bin/api
+          API_URL=$(curl -s https://api.github.com/repos/MakcRe/KuGouMusicApi/releases/latest | grep "tarball_url" | cut -d '"' -f 4)
+          if [ -z "$API_URL" ]; then
+            API_URL="https://github.com/MakcRe/KuGouMusicApi/archive/refs/heads/master.tar.gz"
+          fi
+          curl -L "$API_URL" -o api_source.tar.gz
+          tar -xzf api_source.tar.gz --strip-components=1 -C bin/api
+          rm api_source.tar.gz
+
+          cd bin/api
+          npm install --omit=dev
+          # 使用 pkg 打包为独立单二进制文件
+          npx --yes @yao-pkg/pkg app.js --target node18-linux-x64 -o ../KuGouMusicApi || true
+          chmod +x ../KuGouMusicApi || true
+          cd ../..
+
+      - name: Build Frontend & Generate Bindings
+        run: |
+          wails3 generate bindings .
+          cd frontend
+          npm install
+          npm run build
+          cd ..
+
+      - name: Compile wmPlayer (Linux)
+        run: |
+          mkdir -p bin
+          go build -tags production -trimpath -buildvcs=false -ldflags="-w -s" -o bin/wmplayer .
+          chmod +x bin/wmplayer
+
+      - name: Package Linux Archive
+        run: |
+          cd bin
+          tar -czvf wmplayer-linux-amd64.tar.gz wmplayer KuGouMusicApi api/
+          cd ..
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wmplayer-linux-amd64
+          path: bin/wmplayer-linux-amd64.tar.gz
+
+  # ==========================================
+  # 2. Windows Build
+  # ==========================================
+  build-windows:
+    name: Build Windows (x86_64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Wails v3 CLI
+        shell: bash
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
+      - name: Download & Prepare KuGouMusicApi
+        shell: bash
+        run: |
+          mkdir -p bin/api
+          echo "⬇️ 正在下载 MakcRe/KuGouMusicApi 最新 release..."
+          API_URL=$(curl -s https://api.github.com/repos/MakcRe/KuGouMusicApi/releases/latest | grep "zipball_url" | cut -d '"' -f 4)
+          if [ -z "$API_URL" ]; then
+            API_URL="https://github.com/MakcRe/KuGouMusicApi/archive/refs/heads/master.zip"
+          fi
+          curl -L "$API_URL" -o api_source.zip
+          unzip -q api_source.zip
+          mv MakcRe-KuGouMusicApi-*/* bin/api/ || true
+          rm -rf api_source.zip MakcRe-KuGouMusicApi-*
+
+          cd bin/api
+          npm install --omit=dev
+          npx --yes @yao-pkg/pkg app.js --target node18-win-x64 -o ../KuGouMusicApi.exe || true
+          cd ../..
+
+      - name: Build Frontend & Generate Bindings
+        shell: bash
+        run: |
+          wails3 generate bindings .
+          cd frontend
+          npm install
+          npm run build
+          cd ..
+
+      - name: Compile wmPlayer (Windows)
+        shell: bash
+        run: |
+          mkdir -p bin
+          wails3 generate syso -arch amd64 -icon build/windows/icon.ico -manifest build/windows/wails.exe.manifest -info build/windows/info.json -out wails_windows_amd64.syso || true
+          go build -tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui" -o bin/wmplayer.exe .
+          rm -f *.syso
+
+      - name: Package Windows Zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path bin\wmplayer.exe, bin\KuGouMusicApi.exe, bin\api -DestinationPath bin\wmplayer-windows-amd64.zip
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wmplayer-windows-amd64
+          path: bin/wmplayer-windows-amd64.zip
+
+  # ==========================================
+  # 3. macOS Build
+  # ==========================================
+  build-macos:
+    name: Build macOS (Universal)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Wails v3 CLI
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
+      - name: Download & Prepare KuGouMusicApi
+        run: |
+          mkdir -p bin/api
+          echo "⬇️ 正在下载 MakcRe/KuGouMusicApi 最新 release..."
+          API_URL=$(curl -s https://api.github.com/repos/MakcRe/KuGouMusicApi/releases/latest | grep "tarball_url" | cut -d '"' -f 4)
+          if [ -z "$API_URL" ]; then
+            API_URL="https://github.com/MakcRe/KuGouMusicApi/archive/refs/heads/master.tar.gz"
+          fi
+          curl -L "$API_URL" -o api_source.tar.gz
+          tar -xzf api_source.tar.gz --strip-components=1 -C bin/api
+          rm api_source.tar.gz
+
+          cd bin/api
+          npm install --omit=dev
+          npx --yes @yao-pkg/pkg app.js --target node18-macos-x64 -o ../KuGouMusicApi || true
+          chmod +x ../KuGouMusicApi || true
+          cd ../..
+
+      - name: Build Frontend & Generate Bindings
+        run: |
+          wails3 generate bindings .
+          cd frontend
+          npm install
+          npm run build
+          cd ..
+
+      - name: Compile wmPlayer .app Bundle (macOS)
+        run: |
+          mkdir -p bin/wmplayer.app/Contents/{MacOS,Resources/api}
+          go build -tags production -trimpath -buildvcs=false -ldflags="-w -s" -o bin/wmplayer.app/Contents/MacOS/wmplayer .
+          cp build/darwin/icons.icns bin/wmplayer.app/Contents/Resources/ || true
+          cp build/darwin/Info.plist bin/wmplayer.app/Contents/ || true
+          cp bin/KuGouMusicApi bin/wmplayer.app/Contents/Resources/ || true
+          cp -r bin/api/* bin/wmplayer.app/Contents/Resources/api/ || true
+
+      - name: Package macOS Zip
+        run: |
+          cd bin
+          zip -r wmplayer-darwin-universal.zip wmplayer.app
+          cd ..
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wmplayer-darwin-universal
+          path: bin/wmplayer-darwin-universal.zip
+
+  # ==========================================
+  # 4. GitHub Release (On Tags)
+  # ==========================================
+  release:
+    name: Create GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Organize release files
+        run: |
+          mkdir -p release_assets
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.deb" -o -name "*.AppImage" \) -exec cp {} release_assets/ \;
+          ls -lh release_assets/
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release_assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
