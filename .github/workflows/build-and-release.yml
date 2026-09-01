@@ -240,19 +240,18 @@ jobs:
   release:
     name: Create GitHub Release
     if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: release_assets
+          merge-multiple: true
 
-      - name: Organize release files
+      - name: Verify release files
         run: |
-          mkdir -p release_assets
-          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) -exec cp {} release_assets/ \;
           ls -lh release_assets/
-
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
