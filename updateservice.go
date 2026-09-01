@@ -13,7 +13,7 @@ import (
 )
 
 // CurrentAppVersion 当前应用版本号
-const CurrentAppVersion = "0.5.1"
+const CurrentAppVersion = "0.6.0"
 
 // UpdateService 自动更新服务
 type UpdateService struct {
