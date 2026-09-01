@@ -162,7 +162,7 @@ jobs:
           FILES_TO_PACK="wmplayer.exe KuGouMusicApi.exe"
           [ -f osd_lyrics.exe ] && FILES_TO_PACK="$FILES_TO_PACK osd_lyrics.exe"
           [ -d lyrics ] && FILES_TO_PACK="$FILES_TO_PACK lyrics"
-          powershell "Compress-Archive -Path $FILES_TO_PACK -DestinationPath wmplayer-windows-amd64.zip -Force"
+          7z a -tzip wmplayer-windows-amd64.zip $FILES_TO_PACK
           cd ..
 
       - name: Upload Windows Artifact
