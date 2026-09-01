@@ -69,12 +69,32 @@ jobs:
           go build -tags production -trimpath -buildvcs=false -ldflags="-w -s" -o bin/wmplayer .
           chmod +x bin/wmplayer
 
+      - name: Build / Fetch OSD Lyrics (Linux)
+        run: |
+          mkdir -p bin
+          if [ -d "lyric/osdlyric" ]; then
+            echo "🔨 编译本地 OSD 歌词..."
+            cd lyric/osdlyric && make && cp osd_lyrics ../../bin/ && cd ../..
+          elif git clone --depth 1 https://github.com/lianchengwu/wmplayer-lyric.git tmp-lyric 2>/dev/null; then
+            echo "🔨 编译拉取的 wmplayer-lyric..."
+            if [ -d "tmp-lyric/osdlyric" ]; then
+              cd tmp-lyric/osdlyric && make && cp osd_lyrics ../../bin/ && cd ../..
+            fi
+            if [ -d "tmp-lyric/plasma-lyrics" ]; then
+              mkdir -p bin/lyrics
+              cp -r tmp-lyric/plasma-lyrics bin/lyrics/
+            fi
+            rm -rf tmp-lyric
+          fi || echo "⚠️ 歌词扩展编译已跳过"
+
       - name: Package Linux Archive
         run: |
           cd bin
-          tar -czvf wmplayer-linux-amd64.tar.gz wmplayer KuGouMusicApi
+          FILES_TO_PACK="wmplayer KuGouMusicApi"
+          [ -f osd_lyrics ] && FILES_TO_PACK="$FILES_TO_PACK osd_lyrics"
+          [ -d lyrics ] && FILES_TO_PACK="$FILES_TO_PACK lyrics"
+          tar -czvf wmplayer-linux-amd64.tar.gz $FILES_TO_PACK
           cd ..
-
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -135,16 +155,20 @@ jobs:
           rm -f *.syso
 
       - name: Package Windows Zip
-        shell: pwsh
+        shell: bash
         run: |
-          Compress-Archive -Path bin\wmplayer.exe, bin\KuGouMusicApi.exe -DestinationPath bin\wmplayer-windows-amd64.zip
+          cd bin
+          FILES_TO_PACK="wmplayer.exe KuGouMusicApi.exe"
+          [ -f osd_lyrics.exe ] && FILES_TO_PACK="$FILES_TO_PACK osd_lyrics.exe"
+          [ -d lyrics ] && FILES_TO_PACK="$FILES_TO_PACK lyrics"
+          powershell "Compress-Archive -Path $FILES_TO_PACK -DestinationPath wmplayer-windows-amd64.zip -Force"
+          cd ..
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
           name: wmplayer-windows-amd64
           path: bin/wmplayer-windows-amd64.zip
-
   # ==========================================
   # 3. macOS Build
   # ==========================================
@@ -196,13 +220,13 @@ jobs:
           cp build/darwin/Info.plist bin/wmplayer.app/Contents/ || true
           cp bin/KuGouMusicApi bin/wmplayer.app/Contents/Resources/ || true
           cp bin/KuGouMusicApi bin/wmplayer.app/Contents/MacOS/ || true
-
+          [ -f bin/osd_lyrics ] && cp bin/osd_lyrics bin/wmplayer.app/Contents/MacOS/ || true
+          [ -f bin/osd_lyrics ] && cp bin/osd_lyrics bin/wmplayer.app/Contents/Resources/ || true
       - name: Package macOS Zip
         run: |
           cd bin
           zip -r wmplayer-darwin-universal.zip wmplayer.app
           cd ..
-
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
         with:

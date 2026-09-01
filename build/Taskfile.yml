@@ -76,3 +76,16 @@ tasks:
     dir: build
     cmds:
       - wails3 update build-assets -name "{{.APP_NAME}}" -binaryname "{{.APP_NAME}}" -config config.yml -dir .
+  build:lyrics:
+    summary: Build OSD lyrics and copy to bin/
+    cmds:
+      - mkdir -p bin
+      - cmd: |
+          if [ -d "lyric/osdlyric" ]; then
+            cd lyric/osdlyric && make && cp osd_lyrics ../../bin/
+          elif [ -d "wmplayer-lyric/osdlyric" ]; then
+            cd wmplayer-lyric/osdlyric && make && cp osd_lyrics ../../bin/
+          else
+            echo "提示: 如需编译 OSD 歌词，请先克隆 https://github.com/lianchengwu/wmplayer-lyric 到 lyric 目录"
+          fi
+        platforms: [linux, darwin]

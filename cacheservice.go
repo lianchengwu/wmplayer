@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -890,25 +891,11 @@ func (cs *CacheService) startOSDLyricsProcess() error {
 			cs.osdProcess = nil
 		}
 	}
-	// 获取当前程序所在的目录
-	ex, err := os.Executable()
+	// 智能查找OSD歌词程序路径
+	osdPath, err := findOSDExecutable()
 	if err != nil {
-		return fmt.Errorf("获取当前程序路径失败: %v", err)
+		return err
 	}
-	exPath := filepath.Dir(ex)
-
-	// 查找OSD歌词程序
-	osdPath := fmt.Sprintf("%s/osdlyric/osd_lyrics", exPath) // 相对路径 "./osdlyric/osd_lyrics"
-	log.Println("OSD歌词程序路径:", osdPath)
-	if _, err := os.Stat(osdPath); os.IsNotExist(err) {
-		// 尝试在系统路径中查找
-		if path, err := exec.LookPath("osd_lyrics"); err == nil {
-			osdPath = path
-		} else {
-			return fmt.Errorf("找不到OSD歌词程序")
-		}
-	}
-
 	// 启动OSD歌词程序（使用默认SSE URL）
 	cs.osdProcess = exec.Command(osdPath)
 
@@ -1085,4 +1072,64 @@ func (c *CacheService) closeAllOSDClients() {
 	})
 
 	log.Printf("✅ [OSD歌词] 所有客户端连接已清空")
+}
+
+// findOSDExecutable 在多级候选路径中智能查找 OSD 桌面歌词程序
+func findOSDExecutable() (string, error) {
+	execPath, err := os.Executable()
+	var execDir string
+	if err == nil {
+		execDir = filepath.Dir(execPath)
+	}
+	cwd, _ := os.Getwd()
+
+	var binaryNames []string
+	if runtime.GOOS == "windows" {
+		binaryNames = []string{"osd_lyrics.exe", "osd_lyrics", "osdlyric.exe", "osdlyric"}
+	} else {
+		binaryNames = []string{"osd_lyrics", "osdlyric"}
+	}
+
+	var candidatePaths []string
+	for _, name := range binaryNames {
+		candidatePaths = append(candidatePaths,
+			// 1. 同级目录
+			filepath.Join(execDir, name),
+			filepath.Join(cwd, name),
+			// 2. 专用子目录 (osdlyric / lyrics / bin)
+			filepath.Join(execDir, "osdlyric", name),
+			filepath.Join(cwd, "osdlyric", name),
+			filepath.Join(execDir, "lyrics", name),
+			filepath.Join(cwd, "lyrics", name),
+			filepath.Join(execDir, "bin", name),
+			filepath.Join(cwd, "bin", name),
+			// 3. 源码与扩展目录 (lyric / wmplayer-lyric)
+			filepath.Join(cwd, "lyric", "osdlyric", name),
+			filepath.Join(cwd, "wmplayer-lyric", "osdlyric", name),
+			// 4. macOS App Bundle 资源目录
+			filepath.Join(execDir, "..", "Resources", name),
+			filepath.Join(execDir, "..", "Resources", "lyrics", name),
+			filepath.Join(execDir, "..", "MacOS", name),
+		)
+	}
+
+	for _, p := range candidatePaths {
+		if p == "" {
+			continue
+		}
+		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+			log.Printf("🔍 找到 OSD 歌词程序: %s", p)
+			return p, nil
+		}
+	}
+
+	// 5. 尝试在系统环境变量 PATH 中查找
+	for _, name := range binaryNames {
+		if path, err := exec.LookPath(name); err == nil {
+			log.Printf("🔍 从系统 PATH 找到 OSD 歌词程序: %s", path)
+			return path, nil
+		}
+	}
+
+	return "", fmt.Errorf("未找到 OSD 歌词程序 (可将 osd_lyrics 放置在程序同级目录或 PATH 中)")
 }
