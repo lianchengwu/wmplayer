@@ -1,8 +1,9 @@
 // settings.js - 设置页面功能模块
 
-// 导入设置服务
+// 导入设置服务与更新服务
 import * as SettingsService from './bindings/wmplayer/settingsservice.js';
-
+import * as UpdateService from './bindings/wmplayer/updateservice.js';
+import { Browser } from '@wailsio/runtime';
 // 设置数据存储
 let settingsData = {
     // 播放设置
@@ -384,11 +385,35 @@ function renderSettingsPage() {
         </div>
 
         <!-- 关于设置 -->
+        <!-- 关于与更新 -->
         <div class="settings-group">
             <h3 class="settings-group-title">
                 <i class="fas fa-info-circle"></i>
-                关于设置
+                关于与更新
             </h3>
+
+            <div class="settings-item">
+                <div class="settings-item-info">
+                    <div class="settings-item-title">当前版本</div>
+                    <div class="settings-item-description">wmPlayer 桌面音乐播放器</div>
+                    <div class="settings-path" id="appVersionDisplay">v0.5.1</div>
+                </div>
+                <div class="settings-item-control">
+                    <button class="settings-button" id="checkUpdateBtn" onclick="checkForAppUpdates()">检查更新</button>
+                </div>
+            </div>
+            <div id="updateStatusInfo" style="display: none; padding: 12px 16px; margin: 8px 0 16px 0; border-radius: 8px; font-size: 13px;"></div>
+
+            <div class="settings-item">
+                <div class="settings-item-info">
+                    <div class="settings-item-title">开源项目地址</div>
+                    <div class="settings-item-description">访问 GitHub 仓库获取最新源码与讨论</div>
+                    <div class="settings-path">github.com/lianchengwu/lmplayer</div>
+                </div>
+                <div class="settings-item-control">
+                    <button class="settings-button" onclick="openExternalLink('https://github.com/lianchengwu/lmplayer')">访问 GitHub</button>
+                </div>
+            </div>
 
             <div class="settings-item">
                 <div class="settings-item-info">
@@ -644,5 +669,66 @@ window.resetSettings = async () => {
             console.error('重置设置失败:', error);
             alert('重置设置失败');
         }
+    }
+};
+
+// 打开外部浏览器链接
+window.openExternalLink = (url) => {
+    try {
+        if (Browser && Browser.OpenURL) {
+            Browser.OpenURL(url);
+        } else {
+            window.open(url, '_blank');
+        }
+    } catch (e) {
+        window.open(url, '_blank');
+    }
+};
+
+// 检查应用更新
+window.checkForAppUpdates = async () => {
+    const btn = document.getElementById('checkUpdateBtn');
+    const infoDiv = document.getElementById('updateStatusInfo');
+    if (!btn || !infoDiv) return;
+
+    btn.disabled = true;
+    btn.textContent = '检查中...';
+    infoDiv.style.display = 'block';
+    infoDiv.style.background = 'var(--bg-secondary)';
+    infoDiv.style.color = 'var(--text-secondary)';
+    infoDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在向 GitHub 查询最新版本...';
+
+    try {
+        const res = await UpdateService.CheckForUpdates();
+        btn.disabled = false;
+        btn.textContent = '检查更新';
+
+        if (res.Success && res.HasUpdate) {
+            infoDiv.style.background = 'rgba(99, 102, 241, 0.1)';
+            infoDiv.style.color = 'var(--accent-color)';
+            infoDiv.style.border = '1px solid var(--accent-color)';
+            infoDiv.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 4px;">🎉 发现新版本 v${res.LatestVersion} (当前 v${res.CurrentVersion})</div>
+                ${res.ReleaseNotes ? `<div style="margin: 6px 0; max-height: 120px; overflow-y: auto; white-space: pre-wrap; opacity: 0.85;">${res.ReleaseNotes}</div>` : ''}
+                <button class="settings-button" style="margin-top: 8px;" onclick="openExternalLink('${res.ReleaseURL}')">前往下载发布页</button>
+            `;
+        } else if (res.Success) {
+            infoDiv.style.background = 'rgba(34, 197, 94, 0.1)';
+            infoDiv.style.color = '#22c55e';
+            infoDiv.style.border = '1px solid #22c55e';
+            infoDiv.innerHTML = `<i class="fas fa-check-circle"></i> 当前已是最新版本 (v${res.CurrentVersion})`;
+        } else {
+            infoDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+            infoDiv.style.color = '#ef4444';
+            infoDiv.style.border = '1px solid #ef4444';
+            infoDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${res.Message || '检查更新失败'}`;
+        }
+    } catch (err) {
+        btn.disabled = false;
+        btn.textContent = '检查更新';
+        infoDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+        infoDiv.style.color = '#ef4444';
+        infoDiv.style.border = '1px solid #ef4444';
+        infoDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> 检查失败: ${err.message || err}`;
     }
 };

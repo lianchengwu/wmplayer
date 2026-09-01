@@ -5,11 +5,10 @@ import (
 	"embed"
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/services/notifications"
 )
 
 // 全局缓存服务实例
@@ -87,16 +86,17 @@ func main() {
 	// 创建媒体键服务实例
 	mediaKeyService := NewMediaKeyService()
 
-	// 创建播放器服务实例（如果需要的话）
-	// playerService := NewPlayerService()
-	// mediaKeyService.SetPlayerService(playerService)
+	// 创建更新服务与原生系统通知服务
+	updateService := NewUpdateService()
+	notificationService := notifications.New()
 
 	// 启动HTTP服务器，传入OSD歌词服务以支持SSE
 	if err := cacheService.StartHTTPServerWithOSDLyrics(); err != nil {
 		log.Printf("❌ 启动HTTP缓存服务器失败: %v", err)
 	}
 
-	app := application.New(application.Options{
+	var app *application.App
+	app = application.New(application.Options{
 		Name:        "wmplayer",
 		Description: "wmplayer - 一个基于 GOLANG 技术的音乐播放器",
 		Services: []application.Service{
@@ -113,9 +113,34 @@ func main() {
 			application.NewService(NewSettingsService()),
 			application.NewService(NewDownloadService()),
 			application.NewService(mediaKeyService),
+			application.NewService(updateService),
+			application.NewService(notificationService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
+		},
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID: "com.wmplayer.app",
+			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
+				log.Printf("🔔 收到多开请求，激活当前播放器窗口...")
+				if currentWindow := app.Window.Current(); currentWindow != nil {
+					currentWindow.Show()
+					currentWindow.Focus()
+					currentWindow.Restore()
+				}
+			},
+		},
+		OnShutdown: func() {
+			log.Printf("🔴 正在退出应用，执行全局清理...")
+			mediaKeyService.UnregisterMediaKeys()
+			if cacheService != nil {
+				cacheService.stopOSDLyricsProcess()
+				if stopErr := cacheService.StopHTTPServer(); stopErr != nil {
+					log.Printf("❌ 停止HTTP缓存服务器失败: %v", stopErr)
+				}
+			}
+			GlobalAPIManager.Stop()
+			log.Printf("✅ 全局清理完成")
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
@@ -125,24 +150,30 @@ func main() {
 		},
 	})
 
-	// Create a new window with the necessary options.
-	// 'Title' is the title of the window.
-	// 'Mac' options tailor the window when running on macOS.
-	// 'BackgroundColour' is the background colour of the window.
-	// 'URL' is the URL that will be loaded into the webview.
+	// 初始化更新服务
+	updateService.SetApp(app)
+	_ = updateService.InitUpdater()
 
+	// 创建窗口并配置原生属性
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:     "wmplayer",
-		Height:    900,
-		Width:     1600,
-		Frameless: true,
+		Title:                      "wmplayer",
+		Height:                     900,
+		Width:                      1600,
+		MinWidth:                   1024,
+		MinHeight:                  640,
+		Frameless:                  true,
+		InitialPosition:            application.WindowCentered,
+		DefaultContextMenuDisabled: true,
+		BackgroundColour:           application.NewRGB(248, 250, 252),
+		URL:                        "/",
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
 			Backdrop:                application.MacBackdropTranslucent,
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
-		BackgroundColour: application.NewRGB(248, 250, 252), // 使用浅色主题的背景色
-		URL:              "/",
+		Linux: application.LinuxWindow{
+			Icon: customIcon,
+		},
 	})
 
 	// 创建系统托盘图标
@@ -254,49 +285,8 @@ func main() {
 		}
 	}()
 
-	// 设置信号处理，确保程序被强制退出时也能清理OSD进程
-	go func() {
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-		<-sigChan
-
-		log.Printf("🔴 收到退出信号，清理OSD歌词进程...")
-		if cacheService != nil {
-			cacheService.stopOSDLyricsProcess()
-		}
-
-		GlobalAPIManager.Stop()
-		// 退出程序
-		os.Exit(0)
-	}()
-
-	// contextMenu := app.ContextMenu.New()
-	// app.ContextMenu.Add("wmplayer", contextMenu)
-
-	// Run the application. This blocks until the application has been exited.
+	// 运行应用（阻塞直到退出）
 	err = app.Run()
-
-	// 应用退出时取消注册媒体键
-	mediaKeyService.UnregisterMediaKeys()
-
-	// 应用退出时，停止OSD歌词程序
-	if cacheService != nil {
-		log.Printf("🔴 应用退出，清理OSD歌词进程...")
-		cacheService.stopOSDLyricsProcess()
-	}
-	// 应用退出时，停止外部拉起的 API 服务
-	GlobalAPIManager.Stop()
-
-	// 应用退出时，停止HTTP缓存服务器
-	if cacheService != nil {
-		if stopErr := cacheService.StopHTTPServer(); stopErr != nil {
-			log.Printf("❌ 停止HTTP缓存服务器失败: %v", stopErr)
-		} else {
-			log.Printf("✅ HTTP缓存服务器已停止")
-		}
-	}
-
-	// If an error occurred while running the application, log it and exit.
 	if err != nil {
 		log.Fatal(err)
 	}
