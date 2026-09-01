@@ -11,7 +11,7 @@
 [![GitHub Actions](https://img.shields.io/github/actions/workflow/status/lianchengwu/lmplayer/build-and-release.yml?branch=main&style=flat-square&logo=github-actions)](https://github.com/lianchengwu/lmplayer/actions)
 [![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=flat-square)](LICENSE)
 
-[功能特性](#-主要特性) • [应用截图](#-应用截图) • [快速开始](#-快速开始) • [CI 与发布](#-持续集成与跨平台发布) • [架构解析](#-架构与功能模块) • [免责声明](#-免责声明)
+[功能特性](#-主要特性) • [应用截图](#-应用截图) • [歌词扩展](#-歌词系统与外部扩展) • [快速开始](#-快速开始) • [CI 与发布](#-持续集成与跨平台发布) • [目录结构](#-目录结构) • [免责声明](#-免责声明)
 
 </div>
 
@@ -70,7 +70,7 @@
 - **多媒体按键支持**：支持键盘播放/暂停、上一曲、下一曲全局快捷键。
 - **系统托盘控制**：后台最小化运行、托盘菜单控制切歌与收藏。
 - **智能缓存配额**：内置 2GB 缓存配额监控与 LRU 自动淘汰机制，防止磁盘空间无节制增长。
-
+- **独立歌词扩展仓库**：配套开源 [wmplayer-lyric](https://github.com/lianchengwu/wmplayer-lyric) 桌面歌词与 KDE Plasma 插件。
 ---
 
 ## 🚀 快速开始
@@ -145,6 +145,43 @@ git push origin v1.0.0
 | **macOS** | Universal (Intel / Apple Silicon) | `wmplayer-darwin-universal.zip` (`wmplayer.app` Bundle) |
 
 ---
+
+## 🎵 歌词系统与外部扩展
+
+wmPlayer 通过内置的 SSE (Server-Sent Events) 服务器向外部歌词进程实时广播歌词流，并提供了独立的桌面歌词与桌面插件扩展：
+
+* **歌词扩展开源仓库**：👉 [wmplayer-lyric](https://github.com/lianchengwu/wmplayer-lyric)
+
+### 🖥️ OSD 桌面悬浮歌词
+独立的桌面透明悬浮歌词程序，支持：
+- 透明度调节 (`0.01` ~ `0.90`)
+- 字体缩放 (`12px` ~ `48px`)
+- 文字颜色、卡拉OK逐字高亮色彩自定义
+- 窗口锁定/解锁、自由拖拽移动和调整尺寸
+
+```bash
+# 编译并运行 OSD 桌面歌词
+git clone https://github.com/lianchengwu/wmplayer-lyric.git
+cd wmplayer-lyric/osdlyric
+make
+./osd_lyrics
+```
+
+### 🎨 KDE Plasma 桌面歌词挂件
+专为 Linux KDE Plasma 桌面环境深度打造的桌面小部件：
+- 无缝嵌入 Plasma 任务栏或桌面
+- 支持卡拉OK动态变色与自适应桌面主题
+- 超低资源占用与丝滑平移动画
+
+```bash
+# 安装 KDE Plasma 桌面歌词插件
+cd wmplayer-lyric/plasma-lyrics
+./install.sh
+```
+
+### 📡 歌词通信协议
+- **SSE 端点**：`http://127.0.0.1:18911/api/osd-lyrics/sse`
+- **数据格式**：实时分发经过解析的 LRC / KRC JSON 格式数据流
 
 ## 📁 目录结构
 
@@ -231,11 +268,17 @@ wmplayer/
 - [Wails](https://wails.io/) - 极简高性能的 Go 跨平台桌面框架
 - [KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi) - 优质的 Node.js 音乐数据接口服务
 - [Font Awesome](https://fontawesome.com/) - 丰富完备的矢量图标库
+- [wmplayer-lyric](https://github.com/lianchengwu/wmplayer-lyric) - 配套桌面歌词与 Plasma 插件系统
+
+---
+
+## 💬 交流群组
+
+- **Telegram 群组**：[加入讨论交流](https://t.me/+EzW5VV8YtOhhMjQ1)
 
 ---
 
 <div align="center">
 
 **如果 wmPlayer 对你有帮助，欢迎点亮右上角的 ⭐️ Star 支持本项目！**
-
 </div>
